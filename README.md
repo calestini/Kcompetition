@@ -12,6 +12,7 @@ Competition deadline: **December, 17th, 2017**
 
 - [Reading and processing large .csv files](https://stackoverflow.com/questions/17444679/reading-a-huge-csv-file)
 - [Using python module Dask for large .csv files](http://pythondata.com/dask-large-csv-python/)
+    > [Dask documentation](https://dask.pydata.org/en/latest/)
 - [KKBOx website](https://www.kkbox.com)
 - [Great Pandas cheat sheet](https://github.com/pandas-dev/pandas/blob/master/doc/cheatsheet/Pandas_Cheat_Sheet.pdf)
 - [Numpy cheatsheet](https://www.dataquest.io/blog/numpy-cheat-sheet/)
