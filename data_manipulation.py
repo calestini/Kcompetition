@@ -169,4 +169,4 @@ if __name__ == '__main__':
     #x4 = user_logs() #this might take a while
     #toc = time.time()
 
-    print('it took %s ms' %(toc-tic))
+    #print('it took %s ms' %(toc-tic))
