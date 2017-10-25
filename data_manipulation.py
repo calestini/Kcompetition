@@ -17,13 +17,9 @@ def create_new_ids(force = 0):
         return False
     else:
         train = pd.read_csv('../train.csv')
-        test = pd.read_csv('../test.csv')
-
-        #concatenate both to get all msno ids
-        test_train = pd.concat([train, test[['msno']] ])
 
         #recreate ids (to reduce memory consumption by the long strings for both train and test msno's)
-        ids = pd.DataFrame(np.unique(test_train['msno']), columns = ['msno'])
+        ids = pd.DataFrame(np.unique(train['msno']), columns = ['msno'])
         ids['new_id'] = range(len(ids))
 
         ids.to_csv('../new_ids.csv', index = False)
@@ -52,7 +48,7 @@ def split_user_logs():
         return False
 
 #not for user logs yet
-def save_files_new_ids(files = ['members.csv', 'train.csv', 'transactions.csv','test.csv'], prefix = 'new_', force = 0, force_userlog = 0):
+def save_files_new_ids(files = ['members.csv', 'train.csv', 'transactions.csv'], prefix = 'new_', force = 0, force_userlog = 0):
     new_ids = pd.read_csv('../new_ids.csv')
     list_files = files
 
@@ -86,6 +82,9 @@ def save_files_new_ids(files = ['members.csv', 'train.csv', 'transactions.csv','
 
     return True
 
+################################################################################
+#   Functions to read the files with the correct data types
+################################################################################
 def members(new_ids = 'yes'):
     """
     Read and parse the info for the members file (smallint, dates, ...)
@@ -161,13 +160,13 @@ if __name__ == '__main__':
     split_user_logs()
 
     #(3)change ids in the main files (except user_logs), if it does not exist yet
-    save_files_new_ids(force_userlog = 0)
+    save_files_new_ids(force = 1)
 
-    tic = time.time()
-    x1 = members()
-    x2 = transactions()
-    x3 = train()
+    #tic = time.time()
+    #x1 = members()
+    #x2 = transactions()
+    #x3 = train()
     #x4 = user_logs() #this might take a while
-    toc = time.time()
+    #toc = time.time()
 
     print('it took %s ms' %(toc-tic))
