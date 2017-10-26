@@ -7,7 +7,35 @@ from os import listdir
 import subprocess
 import time
 
+def split_user_logs_new(infilepath='../user_log_files/user_logs.csv', chunksize = 15000000):
+    if os.path.isdir('../user_log_files'):
+        if os.path.isfile('../user_log_files/user_logs0.csv'):
+            print ('Files for user_logs.csv already existed. Nothing created')
+            return False
+        else:
+            fname, ext = infilepath.rsplit('.',1)
+            i = 0
+            written = False
+            with open(infilepath) as infile:
+                while True:
+                    outfilepath = "{}{}.{}".format(fname, i, ext)
+                    with open(outfilepath, 'w') as outfile:
+                        for line in (infile.readline() for _ in range(chunksize)):
+                            outfile.write(line)
+                        written = bool(line)
+                    if not written:
+                        break
+                    i += 1
+
+            print ('%s files generated' %(i))
+            return True
+    else:
+        print ('Please create a folder "user_log_files and place user_logs.csv in that file"')
+        return False
+
+
 ##---Create File with new Ids.
+##---Should we consider onnly user ids that are presentin train and test set??
 def create_new_ids(force = 0):
     """
     Create a new file with numerical ids for all all users
@@ -17,9 +45,14 @@ def create_new_ids(force = 0):
         return False
     else:
         train = pd.read_csv('../train.csv')
+        #transactions = pd.read_csv('../transactions.csv')
+        test = pd.read_csv('../sample_submission_zero.csv')
+
+        #train_txn_temp = train.append(transactions, ignore_index = True)
+        train_txn = train.append(test, ignore_index = True)
 
         #recreate ids (to reduce memory consumption by the long strings for both train and test msno's)
-        ids = pd.DataFrame(np.unique(train['msno']), columns = ['msno'])
+        ids = pd.DataFrame(np.unique(train_txn['msno']), columns = ['msno'])
         ids['new_id'] = range(len(ids))
 
         ids.to_csv('../new_ids.csv', index = False)
@@ -48,7 +81,7 @@ def split_user_logs():
         return False
 
 #not for user logs yet
-def save_files_new_ids(files = ['members.csv', 'train.csv', 'transactions.csv'], prefix = 'new_', force = 0, force_userlog = 0):
+def save_files_new_ids(files = ['members.csv', 'train.csv', 'transactions.csv', 'sample_submission_zero.csv'], prefix = 'new_', force = 0, force_userlog = 0):
     new_ids = pd.read_csv('../new_ids.csv')
     list_files = files
 
@@ -68,12 +101,12 @@ def save_files_new_ids(files = ['members.csv', 'train.csv', 'transactions.csv'],
         onlyfiles = [f for f in listdir('../user_log_files/') if os.path.isfile(os.path.join('../user_log_files/', f))]
 
         for doc in onlyfiles:
-            if doc != '.DS_Store' and doc != 'user_logs.csv':
+            if doc != '.DS_Store' and doc != 'user_logs.csv' and doc[0:len(prefix)] != prefix:
                 print ('updating ids for file %s ......'  %(doc))
-                if doc == 'xaa':
+                if doc == 'user_logs0.csv':
                     filex = pd.read_csv('../user_log_files/'+doc)
                 else:
-                    filex = pd.read_csv('../user_log_files/xac', header=None,
+                    filex = pd.read_csv('../user_log_files/'+doc, header=None,
                         names = [
                             'msno', 'date', 'num_25', 'num_50', 'num_75', 'num_985', 'num_100', 'num_unq', 'total_secs'
                             ])
@@ -134,7 +167,7 @@ def user_logs(new_ids = 'yes', prefix = "new_"):
     for doc in onlyfiles:
         if doc[0:len(prefix)] == prefix:
             user_log_temp = pd.read_csv('../user_log_files/'+doc, dtype = {
-                    'msno': 'str',
+                    'new_id': np.uint32,
                     'date': 'str',
                     'num_25': np.float16,
                     'num_50': np.float16,
@@ -142,31 +175,54 @@ def user_logs(new_ids = 'yes', prefix = "new_"):
                     'num_985': np.float16,
                     'num_100': np.float16,
                     'num_unq': np.float16,
-                    'total_secs': np.float16
+                    'total_secs': np.uint32
                 }, parse_dates = ['date'])
             if counter == 0:
                 user_log_combined = user_log_temp
             else:
                 user_log_combined = user_log_combined.append(user_log_temp, ignore_index=True)
+            counter =+ 1
 
     return user_log_combined
 
 
+def date_matrices(verbose = 1):
+
+    [ print ('\nReading Datasets...\n') if verbose == 1 else 0]
+    [ print ('\nReading Train...\n') if verbose == 1 else 0]
+    tn = train()
+    [ print ('\nReading Members...\n') if verbose == 1 else 0]
+    memb = members()
+    [ print ('\nReading Transactions...\n') if verbose == 1 else 0]
+    txn = transactions()
+    [ print ('\nReading User Logs...\n') if verbose == 1 else 0]
+    ul = user_logs()
+    [ print ('\nDatasets Loaded\n') if verbose == 1 else 0]
+
+    ##Members DataFrame
+    #(1) - add a lifetime(days) fiel from registration to expiration
+    [ print ('Members: adding lifetime count (expiration - registration)\n') if verbose == 1 else 0]
+    memb['lifetime'] = memb['expiration_date'] - memb['registration_init_time']
+    memb['lifetime'] = memb['lifetime'].apply(lambda x: x.days)
+
+    ##Transactions DataFrame
+    #(1)-
+
+    ## User Log DataFrame
+    #(1)- Matrix of id vs date -- total seconds daily
+    ul['total_secs'] = ul['total_secs'].astype(np.float)
+    #ul_secs = pd.pivot_table(ul, values='total_secs', index=['new_id'], columns=['date'], aggfunc=np.sum)
+
+
+    return tn, memb, txn, ul
+
+
 if __name__ == '__main__':
+    #(0)split user_log file
+    split_user_logs_new()
+
     #(1)create file new_ids if it does not exist
     create_new_ids(force = 0)
 
-    #(2)split user_log.csv into many files of 1,000 MB
-    split_user_logs()
-
-    #(3)change ids in the main files (except user_logs), if it does not exist yet
-    save_files_new_ids(force = 1)
-
-    #tic = time.time()
-    #x1 = members()
-    #x2 = transactions()
-    #x3 = train()
-    #x4 = user_logs() #this might take a while
-    #toc = time.time()
-
-    #print('it took %s ms' %(toc-tic))
+    #(2)change ids in the main files (except user_logs), if it does not exist yet
+    save_files_new_ids(force = 0, force_userlog = 1)
