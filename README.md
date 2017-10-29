@@ -1,6 +1,6 @@
 # Kcompetition
 
-[WSDM KKBoxs - Churn Kaggle Competition](https://www.kaggle.com/c/kkbox-music-recommendation-challenge)
+[WSDM KKBoxs - Churn Kaggle Competition](https://www.kaggle.com/c/kkbox-churn-prediction-challenge)
 
 Competition deadline: **December, 17th, 2017**
 

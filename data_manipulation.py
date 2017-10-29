@@ -169,13 +169,13 @@ def user_logs(new_ids = 'yes', prefix = "new_"):
             user_log_temp = pd.read_csv('../user_log_files/'+doc, dtype = {
                     'new_id': np.uint32,
                     'date': 'str',
-                    'num_25': np.float16,
-                    'num_50': np.float16,
-                    'num_75': np.float16,
-                    'num_985': np.float16,
-                    'num_100': np.float16,
-                    'num_unq': np.float16,
-                    'total_secs': np.uint32
+                    'num_25': np.uint16,
+                    'num_50': np.uint16,
+                    'num_75': np.uint16,
+                    'num_985': np.uint16,
+                    'num_100': np.uint16,
+                    'num_unq': np.uint16,
+                    'total_secs': np.float32
                 }, parse_dates = ['date'])
             if counter == 0:
                 user_log_combined = user_log_temp
@@ -209,20 +209,63 @@ def date_matrices(verbose = 1):
     #(1)-
 
     ## User Log DataFrame
-    #(1)- Matrix of id vs date -- total seconds daily
-    ul['total_secs'] = ul['total_secs'].astype(np.float)
-    #ul_secs = pd.pivot_table(ul, values='total_secs', index=['new_id'], columns=['date'], aggfunc=np.sum)
 
+    [ print ('User Log: Creating total_songs field\n') if verbose == 1 else 0]
+    ul['total_songs']=(0.25*ul['num_25'] + 0.50*ul['num_50'] + 0.75*ul['num_75'] + 0.985*ul['num_985']+ul['num_100'])
+    ul['total_songs'] = ul['total_songs'].clip(lower = 0, upper = ul['total_songs'].quantile(0.995))
 
-    return tn, memb, txn, ul
+    print (np.min(ul['total_songs']))
+    [ print ('quantile 0.025 total_songs uncapped: {0} songs\n' .format(ul['total_songs'].quantile(0.025))) if verbose == 1 else 0]
+    [ print ('quantile 0.500 total_songs uncapped: {0} songs\n' .format(ul['total_songs'].quantile(0.50))) if verbose == 1 else 0]
+    [ print ('quantile 0.985 total_songs uncapped: {0} songs\n' .format(ul['total_songs'].quantile(0.985))) if verbose == 1 else 0]
+    [ print ('quantile 0.995 total_songs uncapped: {0} songs\n' .format(ul['total_songs'].quantile(0.995))) if verbose == 1 else 0]
 
+    [ print ('User Log: Calculate median song length to replace outliers\n') if verbose == 1 else 0]
+    ul['avg_song'] = ul['total_secs']/(((0.25*ul['num_25'] + 0.50*ul['num_50'] + 0.75*ul['num_75'] + 0.985*ul['num_985'])*0.90)+ul['num_100'])
+    avg_song = ul['avg_song'].quantile(0.5) #median
+
+    [ print  ('quantile 0.025 avg_song uncapped: {0}s\n' .format(ul['avg_song'].quantile(0.025))) if verbose == 1 else 0]
+    [ print  ('quantile 0.500 avg_song uncapped: {0}s\n' .format(ul['avg_song'].quantile(0.50))) if verbose == 1 else 0]
+    [ print  ('quantile 0.985 avg_song uncapped: {0}s\n' .format(ul['avg_song'].quantile(0.985))) if verbose == 1 else 0]
+
+    [ print ('User Log: Replace lower and upper outliers (median song length * songs played)\n') if verbose == 1 else 0]
+    #ul[ul['total_secs']<=0]['total_secs'] = ul[ul['total_secs']<=0]['total_songs']*avg_song
+    #ul[ul['total_secs']>ul['total_songs'].quantile(0.985)]['total_secs'] = ul[ul['total_secs']>ul['total_songs'].quantile(0.985)]['total_songs']*avg_song
+
+    mask_lower = ul.total_secs <= 0
+    mask_upper = ul.total_secs > ul['total_songs'].quantile(0.985)
+    column_name = 'total_secs'
+    ul.loc[mask_lower, column_name] = ul.loc[mask_lower, 'total_songs']*avg_song
+    ul.loc[mask_upper, column_name] = ul.loc[mask_upper, 'total_songs']*avg_song
+
+    [ print ('User Log: Creating yearMonth field\n') if verbose == 1 else 0]
+    ul = ul[['date', 'new_id', 'total_secs', 'total_songs']]
+    ul['yearMonth'] = ul['date'].map(lambda x: 1000*x.year + x.month)
+
+    [ print ('User Log: Pivoting Table >>>Sum Secs<<<\n') if verbose == 1 else 0]
+    ul_tsecs_month = pd.pivot_table(ul, values='total_secs', index=['new_id'], columns=['yearMonth'], aggfunc=np.sum)
+    [ print ('User Log: Pivoting Table >>>Avg Secs<<<\n') if verbose == 1 else 0]
+    ul_tsecs_month_mean = pd.pivot_table(ul, values='total_secs', index=['new_id'], columns=['yearMonth'], aggfunc=np.mean)
+    [ print ('User Log: Pivoting Table >>>Sum Songs<<<\n') if verbose == 1 else 0]
+    ul_tsongs_month = pd.pivot_table(ul, values='total_songs', index=['new_id'], columns=['yearMonth'], aggfunc=np.sum)
+    [ print ('User Log: Pivoting Table >>>Avg Songs<<<\n') if verbose == 1 else 0]
+    ul_tsongs_month_mean = pd.pivot_table(ul, values='total_songs', index=['new_id'], columns=['yearMonth'], aggfunc=np.mean)
+
+    [ print ('User Log: Saving Tables\n') if verbose == 1 else 0]
+    ul_tsecs_month.to_csv('../ul_tsecs_month.csv')
+    ul_tsecs_month_mean.to_csv('../ul_tsecs_month_mean.csv')
+    ul_tsongs_month.to_csv('../ul_tsongs_month.csv')
+    ul_tsongs_month_mean.to_csv('../ul_tsongs_month_mean.csv')
+
+    return True
 
 if __name__ == '__main__':
     #(0)split user_log file
-    split_user_logs_new()
+    #split_user_logs_new()
 
     #(1)create file new_ids if it does not exist
-    create_new_ids(force = 0)
+    #create_new_ids(force = 0)
 
     #(2)change ids in the main files (except user_logs), if it does not exist yet
-    save_files_new_ids(force = 0, force_userlog = 1)
+    #save_files_new_ids(force = 0, force_userlog = 0)
+    date_matrices(verbose=1)
