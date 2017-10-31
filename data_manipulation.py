@@ -245,17 +245,17 @@ def date_matrices(verbose = 1):
     [ print ('User Log: Pivoting Table >>>Sum Secs<<<\n') if verbose == 1 else 0]
     ul_tsecs_month = pd.pivot_table(ul, values='total_secs', index=['new_id'], columns=['yearMonth'], aggfunc=np.sum)
     [ print ('User Log: Pivoting Table >>>Avg Secs<<<\n') if verbose == 1 else 0]
-    ul_tsecs_month_mean = pd.pivot_table(ul, values='total_secs', index=['new_id'], columns=['yearMonth'], aggfunc=np.mean)
+    ul_tsecs_month_median = pd.pivot_table(ul, values='total_secs', index=['new_id'], columns=['yearMonth'], aggfunc=np.median)
     [ print ('User Log: Pivoting Table >>>Sum Songs<<<\n') if verbose == 1 else 0]
     ul_tsongs_month = pd.pivot_table(ul, values='total_songs', index=['new_id'], columns=['yearMonth'], aggfunc=np.sum)
     [ print ('User Log: Pivoting Table >>>Avg Songs<<<\n') if verbose == 1 else 0]
-    ul_tsongs_month_mean = pd.pivot_table(ul, values='total_songs', index=['new_id'], columns=['yearMonth'], aggfunc=np.mean)
+    ul_tsongs_month_median = pd.pivot_table(ul, values='total_songs', index=['new_id'], columns=['yearMonth'], aggfunc=np.median)
 
     [ print ('User Log: Saving Tables\n') if verbose == 1 else 0]
     ul_tsecs_month.to_csv('../ul_tsecs_month.csv')
-    ul_tsecs_month_mean.to_csv('../ul_tsecs_month_mean.csv')
+    ul_tsecs_month_median.to_csv('../ul_tsecs_month_median.csv')
     ul_tsongs_month.to_csv('../ul_tsongs_month.csv')
-    ul_tsongs_month_mean.to_csv('../ul_tsongs_month_mean.csv')
+    ul_tsongs_month_median.to_csv('../ul_tsongs_month_median.csv')
 
     return True
 
