@@ -6,7 +6,10 @@ Competition deadline: **December, 17th, 2017**
 
 ## Files
 
-- DataWrangling.ipynb: descriptive analytics and basic data manipulation
+- DataWrangling.ipynb: descriptive analytics
+- data_manipulation.py: functions to clean and aggregate the data
+- Churn Case Documentation.ipynb: document with explanation of our approach to the competition
+
 
 ## Useful Links
 
@@ -23,7 +26,7 @@ Competition deadline: **December, 17th, 2017**
 (1) Remember to vectorize and use broadcasting techniques with numpy as much as possible
 (2) Rearrange python notebook flow to start using files with new id from the beginning
 
-## Files Locations and Folder Structure:
+## Files Locations and Folder Structure (Starting Point):
 
  ../
 - /members.csv

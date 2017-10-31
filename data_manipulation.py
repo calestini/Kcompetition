@@ -233,11 +233,11 @@ def date_matrices(verbose = 1):
 
     [ print ('\nReading Datasets...\n') if verbose == 1 else 0]
     [ print ('\nReading Train...\n') if verbose == 1 else 0]
-    tn = train()
+    #tn = train()
     [ print ('\nReading Members...\n') if verbose == 1 else 0]
-    memb = members()
+    #memb = members()
     [ print ('\nReading Transactions...\n') if verbose == 1 else 0]
-    txn = transactions()
+    #txn = transactions()
     [ print ('\nReading User Logs...\n') if verbose == 1 else 0]
     ul = user_logs()
     [ print ('\nDatasets Loaded\n') if verbose == 1 else 0]
@@ -245,8 +245,8 @@ def date_matrices(verbose = 1):
     ##Members DataFrame
     #(1) - add a lifetime(days) field from registration to expiration
     [ print ('Members: adding lifetime count (expiration - registration)\n') if verbose == 1 else 0]
-    memb['lifetime'] = memb['expiration_date'] - memb['registration_init_time']
-    memb['lifetime'] = memb['lifetime'].apply(lambda x: x.days)
+    #memb['lifetime'] = memb['expiration_date'] - memb['registration_init_time']
+    #memb['lifetime'] = memb['lifetime'].apply(lambda x: x.days)
 
     ##Transactions DataFrame
     #(1)-
@@ -259,7 +259,7 @@ def date_matrices(verbose = 1):
     ul['total_songs']=(0.25*ul['num_25'] + 0.50*ul['num_50'] + 0.75*ul['num_75'] + 0.985*ul['num_985']+ul['num_100'])
     ul['total_songs'] = ul['total_songs'].clip(lower = 0, upper = ul['total_songs'].quantile(0.995))
 
-    [ print (np.min(ul['total_songs'])) if verbose == 1 else 0]
+    [ print ('quantile 0.00 total_songs uncapped: {0} songs\n' .format(np.min(ul['total_songs']))) if verbose == 1 else 0]
     [ print ('quantile 0.025 total_songs uncapped: {0} songs\n' .format(ul['total_songs'].quantile(0.025))) if verbose == 1 else 0]
     [ print ('quantile 0.500 total_songs uncapped: {0} songs\n' .format(ul['total_songs'].quantile(0.50))) if verbose == 1 else 0]
     [ print ('quantile 0.985 total_songs uncapped: {0} songs\n' .format(ul['total_songs'].quantile(0.985))) if verbose == 1 else 0]
