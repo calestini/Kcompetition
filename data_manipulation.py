@@ -181,7 +181,7 @@ def train():
     """
     train_file = pd.read_csv('../new_train.csv', dtype={
             'is_churn': np.int8,
-            'new_id': np.uint16})
+            'new_id': np.uint32})
 
     return train_file
 
