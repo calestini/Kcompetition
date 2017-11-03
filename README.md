@@ -52,7 +52,7 @@ _Lucas, please put in your vacation days and we can adjust accordingly_
 - **November 19th: First Submission**
 - November 20th to December 26th (1 week): Rejigging model
 - **November 26th: Second Submission**
-- November 27th to December 3rd (1 week): Regigging model
+- November 27th to December 3rd (1 week): Rejigging model
 - **December 3rd: Third Submission** (hopefully with new test data)
 - December 4th to 17th (2 weeks): rejig and resubmit model as necessary
 - **December 17th: Final Submission**
