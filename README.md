@@ -43,16 +43,16 @@ Competition deadline: **December, 17th, 2017**
 - > /user_log_files/user_logs.csv
 
 ## Potential Game Plan For Submission
-_Lucas, please put in your vacation days and we can adjust accordingly_
 
 - Now till November 12th (1.5 weeks): Creating and fine tuning features
     - Lucas: user_logs file
     - Cathy: transactions file
-- November 13th to 19th (1 week): Train model
-- **November 19th: First Submission**
-- November 20th to December 26th (1 week): Rejigging model
-- **November 26th: Second Submission**
-- November 27th to December 3rd (1 week): Rejigging model
+- November 13th to 18th (1 week): Train model
+- **November 18th: First Submission**
+- November 19th to November 23rd (5 days): Rejigging model
+- **November 23rd: Second Submission**
+- November 24th to December 3rd (1 week): Rejigging model
+    /November 24th to December 3rd (1 week): Lucas on vacation 😎/
 - **December 3rd: Third Submission** (hopefully with new test data)
 - December 4th to 17th (2 weeks): rejig and resubmit model as necessary
 - **December 17th: Final Submission**
