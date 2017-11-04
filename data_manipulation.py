@@ -270,7 +270,7 @@ def date_matrices(verbose = 1):
     # The factor is there because the column names only represent the upper bound of the
     # total amount of a song played. In column num_50, a song could have been played 26%-50%.
 
-    compensation_factor = 0.90
+    compensation_factor = 1.0
 
     [ print ('User Log: Calculate median song length to replace outliers\n') if verbose == 1 else 0]
     ul['avg_song'] = ul['total_secs']/(((0.25*ul['num_25'] + 0.50*ul['num_50'] + 0.75*ul['num_75'] + 0.985*ul['num_985'])*compensation_factor)+ul['num_100'])
@@ -295,7 +295,8 @@ def date_matrices(verbose = 1):
 
     ## (Step 4.1) create yearMonth field from date field
     [ print ('User Log: Creating yearMonth field\n') if verbose == 1 else 0]
-    ul = ul[['date', 'new_id', 'total_secs', 'total_songs']]
+    #ul = ul[['date', 'new_id', 'total_secs', 'total_songs']]
+    ul = ul[['date', 'new_id', 'num_unq', 'total_songs']]
     ul['yearMonth'] = ul['date'].map(lambda x: 100*x.year + x.month)
 
     ## (Step 4.2) aggregate by yearMonth
@@ -307,6 +308,10 @@ def date_matrices(verbose = 1):
     ul_tsongs_month = pd.pivot_table(ul, values='total_songs', index=['new_id'], columns=['yearMonth'], aggfunc=np.sum)
     [ print ('User Log: Pivoting Table >>>Avg Songs<<<\n') if verbose == 1 else 0]
     ul_tsongs_month_median = pd.pivot_table(ul, values='total_songs', index=['new_id'], columns=['yearMonth'], aggfunc=np.median)
+    [ print ('User Log: Pivoting Table >>>Sum Daily Unique Songs<<<\n') if verbose == 1 else 0]
+    num_unq_sum = pd.pivot_table(ul, values='num_unq', index=['new_id'], columns=['yearMonth'], aggfunc=np.sum)
+    [ print ('User Log: Pivoting Table >>>Median Daily Unique Songs<<<\n') if verbose == 1 else 0]
+    num_unq_median = pd.pivot_table(ul, values='num_unq', index=['new_id'], columns=['yearMonth'], aggfunc=np.median)
 
     ## (Step 4.3) save .csv's
     [ print ('User Log: Saving Tables\n') if verbose == 1 else 0]
@@ -314,6 +319,8 @@ def date_matrices(verbose = 1):
     ul_tsecs_month_median.to_csv('../ul_tsecs_month_median.csv')
     ul_tsongs_month.to_csv('../ul_tsongs_month.csv')
     ul_tsongs_month_median.to_csv('../ul_tsongs_month_median.csv')
+    num_unq_sum.to_csv('../num_unq_sum.csv')
+    num_unq_median.to_csv('../num_unq_median.csv')
 
     return True
 
