@@ -200,7 +200,7 @@ def user_logs(prefix = "new_"):
         if doc[0:len(prefix)] == prefix:
             user_log_temp = pd.read_csv('../user_log_files/'+doc, dtype = {
                     'new_id': np.uint32,
-                    'date': 'str',
+                    'date': 'str',#np.uint32,
                     'num_25': np.uint16,
                     'num_50': np.uint16,
                     'num_75': np.uint16,
@@ -297,7 +297,9 @@ def date_matrices(verbose = 1):
     [ print ('User Log: Creating yearMonth field\n') if verbose == 1 else 0]
     #ul = ul[['date', 'new_id', 'total_secs', 'total_songs']]
     ul = ul[['date', 'new_id', 'num_unq', 'total_songs']]
-    ul['yearMonth'] = ul['date'].map(lambda x: 100*x.year + x.month)
+    #ul['yearMonth'] = ul['date'].map(lambda x: 100*x.year + x.month)
+    ul['yearMonth'] = pd.DatetimeIndex(ul['date']).year*100+pd.DatetimeIndex(ul['date']).month)
+    #ul['yearMonth'] = np.round(ul['date']/100,0)
 
     ## (Step 4.2) aggregate by yearMonth
     [ print ('User Log: Pivoting Table >>>Sum Secs<<<\n') if verbose == 1 else 0]
@@ -336,4 +338,4 @@ if __name__ == '__main__':
     save_files_new_ids(force = 0, force_userlog = 0)
 
     #(3)create user_log files
-    date_matrices(verbose=1)
+    #date_matrices(verbose=1)
