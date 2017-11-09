@@ -298,7 +298,7 @@ def date_matrices(verbose = 1):
     #ul = ul[['date', 'new_id', 'total_secs', 'total_songs']]
     ul = ul[['date', 'new_id', 'num_unq', 'total_songs']]
     #ul['yearMonth'] = ul['date'].map(lambda x: 100*x.year + x.month)
-    ul['yearMonth'] = pd.DatetimeIndex(ul['date']).year*100+pd.DatetimeIndex(ul['date']).month)
+    ul['yearMonth'] = pd.DatetimeIndex(ul['date']).year*100+pd.DatetimeIndex(ul['date']).month
     #ul['yearMonth'] = np.round(ul['date']/100,0)
 
     ## (Step 4.2) aggregate by yearMonth
