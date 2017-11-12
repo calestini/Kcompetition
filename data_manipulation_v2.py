@@ -7,14 +7,14 @@ from os import listdir
 import subprocess
 import time
 
-    """
+"""
     IMPORTANT:
-        
+
     To account for new file intake:
         Place all new files except user_log_v2.csv into '../'
         Place user_log_v2.csv into '../user_log_files'
-        
-    """
+
+"""
 
 
 def split_user_logs_new(infilepath='../user_log_files/user_logs.csv', chunksize = 15000000):
@@ -22,7 +22,7 @@ def split_user_logs_new(infilepath='../user_log_files/user_logs.csv', chunksize 
     Function to split user_log original file into multiple files (+- 1.1GB each).
     If the files have already been split, the function returns False and does not
     overwrite.
-    
+
     Note that with the new user log file, does not need to be split as it's only one month's worth of data @ 1.3GB
     """
 
@@ -57,7 +57,7 @@ def create_new_ids(force = 0):
     """
     Create a new file only with numerical ids for all all users, instead of msno.
     This file can be then used to trace back
-    
+
     Create new ids modified to take in new files
     """
     if os.path.isfile('../new_ids_v2.csv') and force == 0:
@@ -101,7 +101,7 @@ def split_user_logs_old():
         print ('Please create a folder "user_log_files and place user_logs.csv in that file"')
         return False
     """
-    
+
 def append_transactions(prefix = 'merged_', force = 0):
     """
     Append transactions_v2.csv to transactions.csv
@@ -115,6 +115,7 @@ def append_transactions(prefix = 'merged_', force = 0):
         txn_new = pd.read_csv('../transactions_v2.csv')
         merged_txn = txn_og.append(txn_new, ignore_index=True)
         merged_txn.to_csv('../'+prefix+'transactions.csv', index = False)
+        print ('txn old: %s, txn new: %s, merged: %s' %(len(txn_og), len(txn_new), len(merged_txn)))
 
     return True
 
@@ -126,7 +127,7 @@ def save_files_new_ids(files = ['members_v2.csv', 'train_v2.csv', 'merged_transa
     :predix: string to add to new files
     :force: whether to overwrite in case new files already exist. 0 won't overwrite
     :force_userlog: whether to overwirte but for user_log split files. 0 won't overwrite
-    
+
     Updated to read in members_v2.csv, train_v2.csv, sample_submission_v2.csv, and merged transactions file.
     Updated to read in user_logs_v2.csv file with headers.
     """
@@ -415,17 +416,20 @@ if __name__ == '__main__':
     #(1)create file new_ids if it does not exist
     #create_new_ids(force = 0)
 
+    #Append transactions
+    #append_transactions()
+
     #(2)change ids in the main files (except user_logs), if it does not exist yet
-    #save_files_new_ids(force = 0, force_userlog = 0)
+    save_files_new_ids(force = 0, force_userlog = 1)
 
     #(3)create user_log files
     #date_matrices(verbose=1)
-    
+
     #v2(0)create new ids based on train_v2.csv and sample_submission_v2.csv
     #create_new_ids(force = 0)
-    
+
     #v2(2)append transactions_v2.csv to transactions.csv
     #append_transactions(force = 0)
-    
+
     #v2(3)change ids in the new main files, if it does not exist yet
-    save_files_new_ids(force = 0, force_userlog = 1)
+    #save_files_new_ids(force = 0, force_userlog = 1)
