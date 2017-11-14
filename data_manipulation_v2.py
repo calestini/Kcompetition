@@ -193,7 +193,7 @@ def members_v2(new_ids = 'yes'):
             'bd': np.int8, 'city': np.int8, 'gender':'category' ,
             'registered_via':np.int8, 'registration_init_time':'str',
             'new_id':np.uint32},
-                parse_dates=['expiration_date', 'registration_init_time'])
+                parse_dates=['registration_init_time'])
 
     return members_file
 
@@ -226,7 +226,7 @@ def transactions_merged():
 
     :return: merged transactions DataFrame parsed with correct data types
     """
-    txn_file = pd.read_csv('../merged_transactions.csv', dtype={
+    txn_file = pd.read_csv('../new_merged_transactions.csv', dtype={
         'payment_method_id': np.int8,
         'payment_plan_days': np.uint16,
         'is_cancel': np.int8,
