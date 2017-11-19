@@ -197,6 +197,9 @@ def members_v2(new_ids = 'yes'):
 
     return members_file
 
+def test_v2():
+    test_file = pd.read_csv('../new_sample_submission_v2.csv')
+    return test_file
 
 def transactions():
     """

@@ -5,6 +5,9 @@ import pandas as pd
 from sklearn.cross_validation import train_test_split
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.metrics import confusion_matrix, log_loss
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import cross_val_score
 
 def read_datasets(list_data = ['final_txn_v2', 'final_user_log_v2']):
     for i in range(0, len(list_data)):
@@ -56,12 +59,12 @@ def model(logprint = 1):
     #STEP4: RUN DECISION TREE
     depthss = []
     loglosss = []
-    for depth in range(7,27):
+    for depth in range(7,11):
         depthss.append(depth)
         X_train, X_test, y_train, y_test = train_test_split(x, y, test_size = 0.20, random_state = 1)
 
-        y_train = y_train.reshape(len(y_train), 1)
-        y_test = y_test.reshape(len(y_test), 1)
+        y_train = y_train.values.reshape(len(y_train), 1)
+        y_test = y_test.values.reshape(len(y_test), 1)
 
         #print(y_train.shape)
         #print(y_test.shape)
@@ -69,19 +72,57 @@ def model(logprint = 1):
         #print(X_test.shape)
 
         # Fitting Decision Tree Classification to the Training set
-        classifier = DecisionTreeClassifier(criterion = 'entropy', random_state = 0, max_depth = depth)
-        classifier.fit(X_train, y_train)
+        tree = DecisionTreeClassifier(criterion = 'entropy', random_state = 0, max_depth = depth)
+        tree.fit(X_train, y_train)
 
         # Predicting the Test set results
-        y_pred = classifier.predict(X_test)
+        y_pred = tree.predict(X_test)
+        y_prob = tree.predict_proba(X_test)
 
         # Making the Confusion Matrix
-        cm = confusion_matrix(y_test, y_pred)
+        #cm = confusion_matrix(y_test, y_pred)
 
         #logloss
-        print(log_loss(y_test, y_pred))
-        loglosss.append(log_loss(y_test, y_pred))
+        print(log_loss(y_test, y_prob))
+        loglosss.append(log_loss(y_test, y_prob))
         #print ('Error: {:0.2f}%' .format(((cm[0][1]+ cm[1][0])/(cm[1][1]+ cm[0][0]))*100))
+
+    forest = RandomForestClassifier(n_estimators = 10, random_state = 0)
+    forest.fit(X_train, y_train)
+
+    # Predicting the Test set results
+    y_pred = forest.predict(X_test)
+    y_prob = forest.predict_proba(X_test)
+    print ('Forest')
+    print(log_loss(y_test, y_prob))
+
+    #print ('accuracies CV')
+    #accuracies = cross_val_score(estimator = forest, X = X_train, y = y_train, cv = 10)
+    #print (accuracies.mean())
+    #print (accuracies.std())
+
+    # Random Forest Grid Search
+    parameters = [{"max_depth": [3, None],
+                  "max_features": [1, 3, 10],
+                  "min_samples_split": [2, 3, 10],
+                  "min_samples_leaf": [1, 3, 10],
+                  "bootstrap": [True, False],
+                  "criterion": ["gini", "entropy"]}]
+
+    #Grid search, optimizing for log loss
+    grid_search = GridSearchCV(estimator = forest,
+                               param_grid = parameters,
+                               scoring = 'neg_log_loss',
+                               cv = 10,
+                               n_jobs = -1)
+    grid_search = grid_search.fit(X_train, y_train)
+
+    #Grid search results
+    best_accuracy = grid_search.best_score_
+    best_parameters = grid_search.best_params_
+
+    print ('grid search forest')
+    print (best_accuracy)
 
 if __name__ == '__main__':
     model()
