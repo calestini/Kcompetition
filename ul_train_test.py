@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 import numpy as np
 import pandas as pd
-
 import data_manipulation_v2 as dm
 import datetime as dt
 
@@ -62,8 +61,8 @@ sum_months['listening_p6_test'] = np.count_nonzero(sum_months[p6_test].fillna(0)
 sum_months['listening_p12_test'] = np.count_nonzero(sum_months[p12_test].fillna(0), axis = 1)
 
 #CREATE LOG OF MONTHLY AVERAGE
-sum_months['logavg_secs_p12_train'] = np.log((np.sum(sum_months[p12_train].fillna(0), axis = 1)+1)/(sum_months['listening_p12']+1))
-sum_months['logavg_secs_p12_test'] = np.log((np.sum(sum_months[p12_test].fillna(0), axis = 1)+1)/(sum_months['listening_p12']+1))
+sum_months['logavg_secs_p12_train'] = np.log((np.sum(sum_months[p12_train].fillna(0), axis = 1)+1)/(sum_months['listening_p12_train']+1))
+sum_months['logavg_secs_p12_test'] = np.log((np.sum(sum_months[p12_test].fillna(0), axis = 1)+1)/(sum_months['listening_p12_test']+1))
 
 ##CREATE VAR OF PREVIOUS CONSECUTIVE MONTHS W/O LISTENING DATA
 #Mar skipped for training set (roll forward for test set)
@@ -110,28 +109,9 @@ tmonths = pd.pivot_table(ul, values='logsecs', index=['new_id'], columns=['yearM
 tmonths.fillna(0, inplace = True)
 
 from sklearn.cluster import KMeans
-sclusters = [9]
 tmonths_temp = tmonths.copy(deep=True)
 
-for scluster in sclusters:
-    kmeans = KMeans(n_clusters=scluster, random_state=0).fit(tmonths)
-    tmonths_temp['cluster'] = kmeans.labels_
-    x_temp =  train.merge(tmonths_temp.reset_index(), left_on='new_id', right_on='new_id', how='inner', copy = False)[
-    ['new_id','is_churn','cluster']]
-
-    plt.figure(num=None, figsize=(16, 4), dpi=80, facecolor='w', edgecolor='k')
-    print ('Clusters: {}'.format(scluster))
-    plt.subplot(1,3,1)
-    sns.countplot(kmeans.labels_, color="salmon")
-
-    plt.subplot(1,3,2)
-    plt.title('Clusters Means')
-    plt.plot(kmeans.cluster_centers_.T);
-
-    plt.subplot(1,3,3)
-    sns.barplot(x_temp['cluster'], x_temp['is_churn'], color="salmon")
-    plt.show()
-
+kmeans = KMeans(n_clusters=9, random_state=0).fit(tmonths)
 tmonths_temp['cluster9'] = kmeans.labels_
 ul_cluster9 = tmonths_temp.reset_index()[['new_id','cluster9']]
 
@@ -168,3 +148,63 @@ f_test = test.merge(sum_months.reset_index(), left_on='new_id', right_on='new_id
         .merge(ul_cluster9, on="new_id", how='left')\
         .merge(ul_freq2, on="new_id", how='left')\
         .merge(ul_tenure, on='new_id', how='left')
+
+f_ul2.columns = ['new_id', 'is_churn', 'no_songs_cp6', 'months_listening',
+       'listening_p6', 'listening_p12', 'logavg_secs_p12',
+       'freq_days', 'std_logsecs', 'total_entries', 'cluster9',
+       'freq_days_mean', 'ul_tenure']
+
+#np.sum(pd.isnull(f_ul2))
+
+f_test.columns = ['new_id', 'is_churn', 'no_songs_cp6', 'months_listening',
+       'listening_p6', 'listening_p12', 'logavg_secs_p12',
+       'freq_days', 'std_logsecs', 'total_entries', 'cluster9',
+       'freq_days_mean', 'ul_tenure']
+
+#np.sum(pd.isnull(f_test))
+
+f_ul2['no_songs_cp6'] = f_ul2['no_songs_cp6'].fillna(6)
+f_ul2['months_listening'] = f_ul2['months_listening'].fillna('0-6')
+f_ul2['listening_p6'] = f_ul2['listening_p6'].fillna(0)
+f_ul2['listening_p12'] = f_ul2['listening_p12'].fillna(0)
+f_ul2['total_entries'] = f_ul2['total_entries'].fillna(0)
+f_ul2['ul_tenure'] = f_ul2['ul_tenure'].fillna(0)
+
+f_ul2['logavg_secs_p12'] =f_ul2['logavg_secs_p12'].fillna(np.min(f_ul2['logavg_secs_p12']))
+
+f_ul2['freq_days'] = 1/f_ul2['freq_days']
+f_ul2['freq_days'] = f_ul2['freq_days'].fillna(0)
+
+f_ul2['freq_days_mean'] = 1/f_ul2['freq_days_mean']
+f_ul2['freq_days_mean'] = f_ul2['freq_days_mean'].fillna(0)
+
+f_ul2['std_logsecs'] = f_ul2['std_logsecs'].fillna(0)
+
+f_ul2['cluster9'] = f_ul2['cluster9'].fillna(np.max(f_ul2['cluster9'])+1)
+
+#np.sum(pd.isnull(f_ul2))
+
+f_test['no_songs_cp6'] = f_test['no_songs_cp6'].fillna(6)
+f_test['months_listening'] = f_test['months_listening'].fillna('0-6')
+f_test['listening_p6'] = f_test['listening_p6'].fillna(0)
+f_test['listening_p12'] = f_test['listening_p12'].fillna(0)
+f_test['total_entries'] = f_test['total_entries'].fillna(0)
+f_test['ul_tenure'] = f_test['ul_tenure'].fillna(0)
+
+f_test['logavg_secs_p12'] =f_test['logavg_secs_p12'].fillna(np.min(f_test['logavg_secs_p12']))
+
+f_test['freq_days'] = 1/f_test['freq_days']
+f_test['freq_days'] = f_test['freq_days'].fillna(0)
+
+f_test['freq_days_mean'] = 1/f_test['freq_days_mean']
+f_test['freq_days_mean'] = f_test['freq_days_mean'].fillna(0)
+
+f_test['std_logsecs'] = f_test['std_logsecs'].fillna(0)
+
+f_test['cluster9'] = f_test['cluster9'].fillna(np.max(f_test['cluster9'])+1)
+
+#np.sum(pd.isnull(f_test))
+
+#SAVE TO CSV
+f_ul2.to_csv('../final_user_log_v2.csv', index = False)
+f_test.to_csv('../final_user_log_test.csv', index = False)
