@@ -8,6 +8,14 @@ from sklearn.metrics import confusion_matrix, log_loss
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection import cross_val_score
+from sklearn import model_selection
+from sklearn.linear_model import LogisticRegression
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+from sklearn.naive_bayes import GaussianNB
+from sklearn.svm import SVC
+from imblearn.over_sampling import SMOTE
+
 
 def read_datasets(list_data = ['final_txn_v2', 'final_user_log_v2']):
     for i in range(0, len(list_data)):
@@ -19,41 +27,34 @@ def read_datasets(list_data = ['final_txn_v2', 'final_user_log_v2']):
 
     return merged_df
 
-
-def oversample(train):
-    tcols = train.columns
-    train_np = train.values
-    train_yes = train_np[train_np[:,0] == 1, :]
-    train_no = train_np[train_np[:,0] == 0, :]
-
-    repeat_number = int(train_no.shape[0]/train_yes.shape[0])
-
-    ntrain_yes = train_yes.repeat(repeat_number, axis = 0)
-    ntrain_list = train_yes.tolist() + train_no.tolist()
-
-    [print ('Error!!! did not merge properly') if len(ntrain_list) != (train_yes.shape[0] + train_no.shape[0]) else False]
-    ntrain = pd.DataFrame(ntrain_list, columns = tcols)
-    return ntrain
-
-def prep_data(test_size = 0.20, seed = 1):
-    data_model = {}
-
-    #STEP0: READ DATASETS
+def prep_variables():
     train = read_datasets()
 
-    #STEP1: OVERSAMPLE
-    otrain = train#oversample(train)
-
-    #STEP2: GET DUMMIES FOR CATEGORICAL
     #DUMMIES FOR MONTHS_LISTENING
-    otrain = otrain.join(pd.get_dummies(otrain['months_listening'])).drop('months_listening', axis = 1)
+    train = train.join(pd.get_dummies(train['months_listening'])).drop('months_listening', axis = 1)
 
     #DUMMIES FOR CHURN
-    otrain = otrain.join(pd.get_dummies(otrain['cluster9'])).drop('cluster9', axis = 1)
+    train = train.join(pd.get_dummies(train['cluster9'])).drop('cluster9', axis = 1)
 
-    #STEP3: SPLIT TRAIN TEST
-    y = otrain['is_churn']
-    x = otrain.drop('is_churn', axis = 1)
+    return train
+
+def oversample(train):
+    y = train['is_churn']
+    x = train.drop('is_churn', axis = 1)
+
+    sm = SMOTE(random_state=27) #check for parameters tunning
+    x_res, y_res = sm.fit_sample(x, y)
+    return x_res, y_res
+
+def train_test(test_size = 0.20, seed = 27, oversample = 1):
+    data_model = {}
+
+    train = prep_variables()
+    if oversample == 1:
+        x, y = oversample(train)
+    else:
+        y = train['is_churn']
+        x = train.drop('is_churn', axis = 1)
 
     X_train, X_test, y_train, y_test = train_test_split(x, y, test_size = test_size, random_state = seed)
 
@@ -63,6 +64,28 @@ def prep_data(test_size = 0.20, seed = 1):
     data_model['ytest'] = y_test
 
     return data_model
+
+models = {}
+models['LR']= LogisticRegression()
+models['LDA']= LinearDiscriminantAnalysis()
+models['KNN']= KNeighborsClassifier()
+models['DT']= DecisionTreeClassifier()
+models['RF']= RandomForestClassifier()
+models['NB']= GaussianNB()
+models['SVM']= SVC()
+
+def model(data_model, classifier='RF', parameters):
+    '''
+    generic function to accept any model and parameters for the model
+    :data_model: [dictionary] data with train and test splits
+    :classifier: [string] algorithm to use for classficiation
+    :parameters: [dictionary]
+    '''
+    X_train = data_model['xtrain']
+    X_test = data_model['xtest']
+    y_train = data_model['ytrain']
+    y_test = data_model['ytest']
+
 
 def model_forest(data_model, logprint=1):
     '''
@@ -91,7 +114,7 @@ def decision_tree(data_model, logprint=1):
     y_train = data_model['ytrain']
     y_test = data_model['ytest']
 
-    tree = DecisionTreeClassifier(criterion = 'entropy', random_state = 0, max_depth = depth)
+    tree = DecisionTreeClassifier(criterion = 'entropy', random_state = 0, max_depth = 15)
     tree.fit(X_train, y_train)
     y_pred = tree.predict(X_test)
     y_prob = tree.predict_proba(X_test)
@@ -99,7 +122,7 @@ def decision_tree(data_model, logprint=1):
     print('Decision Tree Train \t{:.4f}' .format(log_loss(y_train, y_prob_train)))
     print('Decision Tree Dev \t{:.4f}' .format(log_loss(y_test, y_prob)))
 
-def model(logprint = 1):
+def modelling(logprint = 1):
     #STEP0: READ DATASETS
     train = read_datasets()
 
@@ -187,5 +210,5 @@ def model(logprint = 1):
 
 if __name__ == '__main__':
     #model()
-    data_model = prep_data()
+    data_model = train_test()
     model_forest(data_model)
