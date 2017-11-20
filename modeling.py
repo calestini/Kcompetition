@@ -35,6 +35,70 @@ def oversample(train):
     ntrain = pd.DataFrame(ntrain_list, columns = tcols)
     return ntrain
 
+def prep_data(test_size = 0.20, seed = 1):
+    data_model = {}
+
+    #STEP0: READ DATASETS
+    train = read_datasets()
+
+    #STEP1: OVERSAMPLE
+    otrain = train#oversample(train)
+
+    #STEP2: GET DUMMIES FOR CATEGORICAL
+    #DUMMIES FOR MONTHS_LISTENING
+    otrain = otrain.join(pd.get_dummies(otrain['months_listening'])).drop('months_listening', axis = 1)
+
+    #DUMMIES FOR CHURN
+    otrain = otrain.join(pd.get_dummies(otrain['cluster9'])).drop('cluster9', axis = 1)
+
+    #STEP3: SPLIT TRAIN TEST
+    y = otrain['is_churn']
+    x = otrain.drop('is_churn', axis = 1)
+
+    X_train, X_test, y_train, y_test = train_test_split(x, y, test_size = test_size, random_state = seed)
+
+    data_model['xtrain'] = X_train
+    data_model['xtest'] = X_test
+    data_model['ytrain'] = y_train
+    data_model['ytest'] = y_test
+
+    return data_model
+
+def model_forest(data_model, logprint=1):
+    '''
+    random forest model
+    :data_model: train and test[dev] splits
+    :return:
+    '''
+    X_train = data_model['xtrain']
+    X_test = data_model['xtest']
+    y_train = data_model['ytrain']
+    y_test = data_model['ytest']
+
+    for depth in range(15,30,1):
+        forest = RandomForestClassifier(n_estimators= 100, criterion = 'entropy', random_state = 0, max_depth=depth)
+        forest.fit(X_train, y_train)
+        y_pred = forest.predict(X_test)
+        y_prob = forest.predict_proba(X_test)
+        y_prob_train = forest.predict_proba(X_train)
+        print ('Depth: \t\t {0}'.format(depth))
+        print('Random Forest Train \t{:.4f}' .format(log_loss(y_train, y_prob_train)))
+        print('Random Forest Dev \t{:.4f}' .format(log_loss(y_test, y_prob)))
+
+def decision_tree(data_model, logprint=1):
+    X_train = data_model['xtrain']
+    X_test = data_model['xtest']
+    y_train = data_model['ytrain']
+    y_test = data_model['ytest']
+
+    tree = DecisionTreeClassifier(criterion = 'entropy', random_state = 0, max_depth = depth)
+    tree.fit(X_train, y_train)
+    y_pred = tree.predict(X_test)
+    y_prob = tree.predict_proba(X_test)
+    y_prob_train = tree.predict_proba(X_train)
+    print('Decision Tree Train \t{:.4f}' .format(log_loss(y_train, y_prob_train)))
+    print('Decision Tree Dev \t{:.4f}' .format(log_loss(y_test, y_prob)))
+
 def model(logprint = 1):
     #STEP0: READ DATASETS
     train = read_datasets()
@@ -59,17 +123,9 @@ def model(logprint = 1):
     #STEP4: RUN DECISION TREE
     depthss = []
     loglosss = []
-    for depth in range(7,11):
+    for depth in range(7,8):
         depthss.append(depth)
         X_train, X_test, y_train, y_test = train_test_split(x, y, test_size = 0.20, random_state = 1)
-
-        y_train = y_train.values.reshape(len(y_train), 1)
-        y_test = y_test.values.reshape(len(y_test), 1)
-
-        #print(y_train.shape)
-        #print(y_test.shape)
-        #print(X_train.shape)
-        #print(X_test.shape)
 
         # Fitting Decision Tree Classification to the Training set
         tree = DecisionTreeClassifier(criterion = 'entropy', random_state = 0, max_depth = depth)
@@ -84,17 +140,18 @@ def model(logprint = 1):
 
         #logloss
         print(log_loss(y_test, y_prob))
+
         loglosss.append(log_loss(y_test, y_prob))
         #print ('Error: {:0.2f}%' .format(((cm[0][1]+ cm[1][0])/(cm[1][1]+ cm[0][0]))*100))
 
-    forest = RandomForestClassifier(n_estimators = 10, random_state = 0)
-    forest.fit(X_train, y_train)
+    forest = RandomForestClassifier(n_estimators= 100, criterion = 'entropy', random_state = 0)
+    #forest.fit(X_train, y_train)
 
     # Predicting the Test set results
-    y_pred = forest.predict(X_test)
-    y_prob = forest.predict_proba(X_test)
-    print ('Forest')
-    print(log_loss(y_test, y_prob))
+    #y_pred = forest.predict(X_test)
+    #y_prob = forest.predict_proba(X_test)
+    #print ('Forest')
+    #print(log_loss(y_test, y_prob))
 
     #print ('accuracies CV')
     #accuracies = cross_val_score(estimator = forest, X = X_train, y = y_train, cv = 10)
@@ -102,27 +159,33 @@ def model(logprint = 1):
     #print (accuracies.std())
 
     # Random Forest Grid Search
-    parameters = [{"max_depth": [3, None],
-                  "max_features": [1, 3, 10],
-                  "min_samples_split": [2, 3, 10],
-                  "min_samples_leaf": [1, 3, 10],
-                  "bootstrap": [True, False],
-                  "criterion": ["gini", "entropy"]}]
+    parameters = [{"max_depth": [15, 25]}]
 
     #Grid search, optimizing for log loss
     grid_search = GridSearchCV(estimator = forest,
                                param_grid = parameters,
                                scoring = 'neg_log_loss',
-                               cv = 10,
+                               cv = 5,
                                n_jobs = -1)
-    grid_search = grid_search.fit(X_train, y_train)
+    #grid_search = grid_search.fit(X_train, y_train)
 
     #Grid search results
-    best_accuracy = grid_search.best_score_
-    best_parameters = grid_search.best_params_
+    #best_accuracy = grid_search.best_score_
+    #best_parameters = grid_search.best_params_
 
-    print ('grid search forest')
-    print (best_accuracy)
+    #print ('grid search forest')
+    #print (best_accuracy)
+    #print (best_parameters)
+
+    from xgboost import XGBClassifier
+    xg = XGBClassifier()
+    xg.fit(X_train, y_train)
+    y_prob = xg.predict_proba(X_test)
+
+    print ('xgboost')
+    print (log_loss(y_test, y_prob))
 
 if __name__ == '__main__':
-    model()
+    #model()
+    data_model = prep_data()
+    model_forest(data_model)
