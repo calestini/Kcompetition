@@ -5,20 +5,23 @@ import data_manipulation_v2 as dm
 import datetime as dt
 import functools
 
+print(train.head())
+
 def txn_train_test(dataset):
     
     print ('Reading datasets...')
     train = dm.train_v2()
     test = dm.test_v2()
     txn_og = dm.transactions_merged() 
-    memb = dm.members_v2
+    memb = dm.members_v2()
     
     print ('Sorting transactions by new_id and dates...')
     txn_og = txn_og.sort_values(['new_id', 'transaction_date', 'membership_expire_date'])
     
-    if dataset = 'train':
+    if dataset == 'train':
         print ('Filtering transaction dataset by transaction date for train set...')
         txn=txn_og[txn_og['transaction_date']<='2017-02-28']
+    else: txn=txn_og
 
     #Number of transactions
     txn_cnts = txn.groupby(['new_id']).size().reset_index(name='txn_cnt')
@@ -90,7 +93,7 @@ def txn_train_test(dataset):
     memb_expire = memb_expire.merge(fst_txn_dt, on = 'new_id', how = 'left')
     memb_expire['not_equal'] = memb_expire['max_memb_expire'] != memb_expire['lst_memb_expire']
 
-    if dataset = 'train':
+    if dataset == 'train':
         memb_expire['lst_memb_expire_post'] = memb_expire['lst_memb_expire'] >= '2017-04-01'
     else:
         memb_expire['lst_memb_expire_post'] = memb_expire['lst_memb_expire'] >= '2017-05-01'
@@ -98,7 +101,7 @@ def txn_train_test(dataset):
     memb_expire = memb_expire.merge(memb[['new_id', 'registration_init_time']], on = 'new_id', how = 'left')
     memb_expire['registration_init_time'] = memb_expire['registration_init_time'].fillna(memb_expire['fst_transaction_date'])
     
-    if dataset = 'train':
+    if dataset == 'train':
         memb_expire['memb_tenure_days'] = (pd.to_datetime('2017-02-28') - memb_expire['registration_init_time'])/np.timedelta64(1, 'D')
     else:
         memb_expire['memb_tenure_days'] = (pd.to_datetime('2017-03-31') - memb_expire['registration_init_time'])/np.timedelta64(1, 'D')
@@ -106,7 +109,7 @@ def txn_train_test(dataset):
     memb_expire['lst_memb_expire_days'] = (memb_expire['lst_memb_expire'] - pd.to_datetime('2017-03-31'))/np.timedelta64(1, 'D')
     memb_expire.drop(['max_memb_expire', 'registration_init_time', 'lst_memb_expire', 'fst_transaction_date'], inplace = True, axis = 1)
 
-    if dataset = 'train':
+    if dataset == 'train':
         print('Merging transaction features with train dataset...')
         txn_features = [
             train, tot_plan_pmt, txn_ar_stop, txn_cancelled, 
@@ -146,7 +149,7 @@ def txn_train_test(dataset):
     f_txn.drop('is_churn', axis = 1, inplace = True)
     
     #Export into csv:
-    if dataset = 'train':
+    if dataset == 'train':
         print ('Exporting transaction features for train dataset into csv...') 
         f_txn.to_csv('../final_txn_v2.csv', index=False)
     else:
@@ -154,3 +157,5 @@ def txn_train_test(dataset):
         f_txn.to_csv('../final_txn_test_v2.csv', index=False)
         
     return f_txn
+
+txn_train_test(dataset='test')
