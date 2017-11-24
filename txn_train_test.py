@@ -5,8 +5,6 @@ import data_manipulation_v2 as dm
 import datetime as dt
 import functools
 
-print(train.head())
-
 def txn_train_test(dataset):
     
     print ('Reading datasets...')
