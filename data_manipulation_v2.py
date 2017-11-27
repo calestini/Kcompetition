@@ -182,14 +182,14 @@ def members(new_ids = 'yes'):
 
     return members_file
 
-def members_v2(new_ids = 'yes'):
+def members_v3(new_ids = 'yes'):
     """
     Read and parse the info for the new members file (smallint, dates, ...)
     It already uses the optimum data types to reduce memory load
 
     :return: new members DataFrame parsed with correct data types
     """
-    members_file = pd.read_csv('../new_members_v2.csv', dtype={
+    members_file = pd.read_csv('../new_members_v3.csv', dtype={
             'bd': np.int8, 'city': np.int8, 'gender':'category' ,
             'registered_via':np.int8, 'registration_init_time':'str',
             'new_id':np.uint32},
@@ -423,7 +423,7 @@ if __name__ == '__main__':
     #append_transactions()
 
     #(2)change ids in the main files (except user_logs), if it does not exist yet
-    save_files_new_ids(force = 0, force_userlog = 1)
+    save_files_new_ids(files = ['members_v3.csv'], prefix = 'new_', force = 0, force_userlog = 0)
 
     #(3)create user_log files
     #date_matrices(verbose=1)

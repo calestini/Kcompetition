@@ -39,6 +39,12 @@ def prep_variables(merged_df):
 
     #DUMMIES FOR CHURN
     train = train.join(pd.get_dummies(train['cluster9'])).drop('cluster9', axis = 1)
+    
+    #DUMMIES FOR REGISTERED_VIA
+    train = train.join(pd.get_dummies(train['registered_via'])).drop('registered_via', axis = 1)
+    
+    #TURN 'NEW_ID' INTO INDEX
+    train = train.set_index('new_id')
 
     return train
 
@@ -69,7 +75,7 @@ def train_test(train, test_size = 0.20, seed = 27, oversampling = 0):
         x, y = undersample(train)
     else:
         y = train['is_churn']
-        x = train.drop('is_churn', axis = 1)
+        x = train.drop(['is_churn'], axis = 1)
 
     X_train, X_test, y_train, y_test = train_test_split(x, y, test_size = test_size, random_state = seed)
 

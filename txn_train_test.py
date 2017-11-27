@@ -11,7 +11,7 @@ def txn_train_test(dataset):
     train = dm.train_v2()
     test = dm.test_v2()
     txn_og = dm.transactions_merged() 
-    memb = dm.members_v2()
+    memb = dm.members_v3()
     
     print ('Sorting transactions by new_id and dates...')
     txn_og = txn_og.sort_values(['new_id', 'transaction_date', 'membership_expire_date'])
@@ -106,25 +106,30 @@ def txn_train_test(dataset):
     
     memb_expire['lst_memb_expire_days'] = (memb_expire['lst_memb_expire'] - pd.to_datetime('2017-03-31'))/np.timedelta64(1, 'D')
     memb_expire.drop(['max_memb_expire', 'registration_init_time', 'lst_memb_expire', 'fst_transaction_date'], inplace = True, axis = 1)
+    
+    memb = memb[['new_id','registered_via', 'bd']]
 
     if dataset == 'train':
         print('Merging transaction features with train dataset...')
         txn_features = [
-            train, tot_plan_pmt, txn_ar_stop, txn_cancelled, 
-            txn_cancelled_last, free_trial, txn_lp_high, 
-            txn_prev_churn, txn_pmt_change, memb_expire]
+        train, tot_plan_pmt, txn_ar_stop, txn_cancelled, 
+        txn_cancelled_last, free_trial, txn_lp_high, 
+        txn_prev_churn, txn_pmt_change, memb_expire, memb]
         f_txn = functools.reduce(lambda left,right: pd.merge(left,right,on='new_id', how='left'), txn_features)
     else:
         print('Merging transaction features with test dataset...')
         txn_features = [
-            test, tot_plan_pmt, txn_ar_stop, txn_cancelled, 
-            txn_cancelled_last, free_trial, txn_lp_high, 
-            txn_prev_churn, txn_pmt_change, memb_expire]
+        test, tot_plan_pmt, txn_ar_stop, txn_cancelled, 
+        txn_cancelled_last, free_trial, txn_lp_high, 
+        txn_prev_churn, txn_pmt_change, memb_expire, memb]
         f_txn = functools.reduce(lambda left,right: pd.merge(left,right,on='new_id', how='left'), txn_features)
     
     print ('Replacing null values...')
+    mask = f_txn.bd < 0
+    f_txn.loc[mask, 'bd'] = 0
+    
     str_col = ['per_free_trial', 'per_days_free_trial', 'txn_cnt'
-               , 'per_lp_high', 'prev_churn_per', 'pmt_change_cnt', 'lst_memb_expire_days', 'memb_tenure_days']
+               , 'per_lp_high', 'prev_churn_per', 'pmt_change_cnt', 'lst_memb_expire_days', 'memb_tenure_days','registered_via', 'bd']
     f_txn[str_col] = f_txn[str_col].fillna(0)
     
     str_col = ['stopped_ar', 'last_cancel', 'lst_free_trial', 'not_equal', 'lst_memb_expire_post']
@@ -138,6 +143,7 @@ def txn_train_test(dataset):
     
     f_txn['avg_daily_paid'] = f_txn['actual_amount_paid']/f_txn['payment_plan_days']
     f_txn['list_actual_diff'] = f_txn['plan_list_price'] - f_txn['actual_amount_paid']
+    f_txn.drop(['plan_list_price', 'actual_amount_paid'], inplace = True, axis = 1)
 
     if f_txn.isnull().sum().sum()>0:
         print('Something is wrong! There are null values in the dataframe')
@@ -156,4 +162,5 @@ def txn_train_test(dataset):
         
     return f_txn
 
-txn_train_test(dataset='test')
+if __name__ == '__main__':
+    txn_train_test(dataset='train')
