@@ -25,6 +25,8 @@ def txn_train_test(dataset):
     txn_cnts = txn.groupby(['new_id']).size().reset_index(name='txn_cnt')
     
     #Total payment plan days, plan list price, actual amount paid
+    txn['payment_plan_days'] = np.where(txn['payment_plan_days'] == 0, (txn['membership_expire_date']-txn['transaction_date'])/np.timedelta64(1, 'D'), txn['payment_plan_days'])
+    txn['payment_plan_days'] = np.where(txn['payment_plan_days'] < 0, 0, txn['payment_plan_days'])
     tot_plan_pmt = txn.groupby(['new_id'])[['payment_plan_days', 'plan_list_price', 'actual_amount_paid']].sum().reset_index()
     tot_plan_pmt['avg_daily_paid'] = tot_plan_pmt['actual_amount_paid'] / tot_plan_pmt['payment_plan_days']
     tot_plan_pmt['list_actual_diff'] = tot_plan_pmt['plan_list_price'] - tot_plan_pmt['actual_amount_paid']
@@ -129,7 +131,8 @@ def txn_train_test(dataset):
     f_txn.loc[mask, 'bd'] = 0
     
     str_col = ['per_free_trial', 'per_days_free_trial', 'txn_cnt'
-               , 'per_lp_high', 'prev_churn_per', 'pmt_change_cnt', 'lst_memb_expire_days', 'memb_tenure_days','registered_via', 'bd']
+               , 'per_lp_high', 'prev_churn_per', 'pmt_change_cnt'
+               , 'lst_memb_expire_days', 'memb_tenure_days' ,'registered_via', 'bd']
     f_txn[str_col] = f_txn[str_col].fillna(0)
     
     str_col = ['stopped_ar', 'last_cancel', 'lst_free_trial', 'not_equal', 'lst_memb_expire_post']
@@ -142,6 +145,9 @@ def txn_train_test(dataset):
     f_txn[str_col] = f_txn[str_col].fillna(f_txn[str_col].mean().iloc[0])
     
     f_txn['avg_daily_paid'] = f_txn['actual_amount_paid']/f_txn['payment_plan_days']
+    f_txn['avg_daily_paid'].replace(np.inf, np.nan).fillna(f_txn['actual_amount_paid'], inplace=True)
+    #f_txn['avg_daily_paid'].replace([np.inf, -np.inf], f_txn['actual_amount_paid'])
+    #train[np.isinf(train['avg_daily_paid'])==True]
     f_txn['list_actual_diff'] = f_txn['plan_list_price'] - f_txn['actual_amount_paid']
     f_txn.drop(['plan_list_price', 'actual_amount_paid'], inplace = True, axis = 1)
 
@@ -151,7 +157,7 @@ def txn_train_test(dataset):
      
     #Drop 'is_churn' field:
     f_txn.drop('is_churn', axis = 1, inplace = True)
-    
+        
     #Export into csv:
     if dataset == 'train':
         print ('Exporting transaction features for train dataset into csv...') 
@@ -163,4 +169,4 @@ def txn_train_test(dataset):
     return f_txn
 
 if __name__ == '__main__':
-    txn_train_test(dataset='train')
+    txn_train_test(dataset='test')
