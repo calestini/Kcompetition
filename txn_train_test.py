@@ -103,10 +103,11 @@ def txn_train_test(dataset):
     
     if dataset == 'train':
         memb_expire['memb_tenure_days'] = (pd.to_datetime('2017-02-28') - memb_expire['registration_init_time'])/np.timedelta64(1, 'D')
+        memb_expire['lst_memb_expire_days'] = (memb_expire['lst_memb_expire'] - pd.to_datetime('2017-03-31'))/np.timedelta64(1, 'D')
     else:
         memb_expire['memb_tenure_days'] = (pd.to_datetime('2017-03-31') - memb_expire['registration_init_time'])/np.timedelta64(1, 'D')
+        memb_expire['lst_memb_expire_days'] = (memb_expire['lst_memb_expire'] - pd.to_datetime('2017-04-30'))/np.timedelta64(1, 'D')
     
-    memb_expire['lst_memb_expire_days'] = (memb_expire['lst_memb_expire'] - pd.to_datetime('2017-03-31'))/np.timedelta64(1, 'D')
     memb_expire.drop(['max_memb_expire', 'registration_init_time', 'lst_memb_expire', 'fst_transaction_date'], inplace = True, axis = 1)
     
     memb = memb[['new_id','registered_via', 'bd']]
