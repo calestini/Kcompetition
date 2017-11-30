@@ -99,10 +99,11 @@ def txn_train_test(dataset):
     lst_memb_expire = txn.groupby(['new_id'])['membership_expire_date'].last().reset_index(name='lst_memb_expire')
     #determine first and last transaction date
     fst_txn_dt = txn.groupby(['new_id'])['transaction_date'].first().reset_index(name='fst_txn_dt')
-    lst_txn_dt = txn[['new_id', 'transaction_date', 'payment_plan_days]].drop_duplicates(subset = ['new_id'], keep='last').rename(columns={'transaction_date': 'lst_txn_dt', 'payment_plan_days': 'lst_pmt_plan_days'})
+    lst_txn_dt = txn[['new_id', 'transaction_date', 'payment_plan_days']].drop_duplicates(subset = ['new_id'], keep='last').rename(columns={'transaction_date': 'lst_txn_dt', 'payment_plan_days': 'lst_pmt_plan_days'})
     #determine if max membership expiry date equals last membership expiry date
     memb_expire = max_memb_expire.merge(lst_memb_expire, on = 'new_id', how = 'inner')
     memb_expire = memb_expire.merge(fst_txn_dt, on = 'new_id', how = 'left')
+    memb_expire = memb_expire.merge(lst_txn_dt, on = 'new_id', how = 'inner')
     memb_expire['not_equal'] = memb_expire['max_memb_expire'] != memb_expire['lst_memb_expire']
     #use members df to determine when member first signed up, and if that information is not available then use first transaction date
     memb_expire = memb_expire.merge(memb[['new_id', 'registration_init_time']], on = 'new_id', how = 'left')
@@ -116,12 +117,12 @@ def txn_train_test(dataset):
         #determine number of days until expiry of membership for last transaction
         memb_expire['lst_memb_expire_days'] = (memb_expire['lst_memb_expire'] - pd.to_datetime('2017-03-31'))/np.timedelta64(1, 'D')
         #determine number of days from last transaction - payment plan days
-        memb_expire['end_lst_txn_days'] = (pd.to_datetime('2017-03-31') - memb_expire['lst_txn_dt'])/np.timedelta64(1, 'D') - memb_expire['lst_pmt_plan_days'])
+        memb_expire['end_lst_txn_days'] = (pd.to_datetime('2017-03-31') - memb_expire['lst_txn_dt'])/np.timedelta64(1, 'D') - memb_expire['lst_pmt_plan_days']
     else:
         memb_expire['lst_memb_expire_post'] = memb_expire['lst_memb_expire'] >= '2017-05-01'
         memb_expire['memb_tenure_days'] = (pd.to_datetime('2017-03-31') - memb_expire['registration_init_time'])/np.timedelta64(1, 'D')
         memb_expire['lst_memb_expire_days'] = (memb_expire['lst_memb_expire'] - pd.to_datetime('2017-04-30'))/np.timedelta64(1, 'D')
-        memb_expire['end_lst_txn_days'] = (pd.to_datetime('2017-04-30') - memb_expire['lst_txn_dt'])/np.timedelta64(1, 'D') - memb_expire['lst_pmt_plan_days'])
+        memb_expire['end_lst_txn_days'] = (pd.to_datetime('2017-04-30') - memb_expire['lst_txn_dt'])/np.timedelta64(1, 'D') - memb_expire['lst_pmt_plan_days']
     
     memb_expire.drop(['max_memb_expire', 'registration_init_time', 'lst_memb_expire'
                       , 'fst_txn_dt', 'lst_txn_dt', 'lst_pmt_plan_days'], inplace = True, axis = 1)
@@ -145,12 +146,14 @@ def txn_train_test(dataset):
         f_txn = functools.reduce(lambda left,right: pd.merge(left,right,on='new_id', how='left'), txn_features)
     
     print ('Replacing null values...')
-    mask = f_txn.bd < 0 | f_txn.bd > 100
+    mask = f_txn.bd < 0
     f_txn.loc[mask, 'bd'] = 0
+    mask = f_txn.bd > 100 
+    f_txn.loc[mask, 'bd'] = 100
     
     str_col = ['per_free_trial', 'txn_cnt'
                , 'per_lp_high', 'prev_churn_per', 'txn_median_gap', 'pmt_change_cnt'
-               , 'lst_memb_expire_days', 'memb_tenure_days' , 'average_daily_paid'
+               , 'lst_memb_expire_days', 'memb_tenure_days' , 'avg_daily_paid'
                , 'list_actual_diff', 'payment_plan_days', 'end_lst_txn_days'
                , 'registered_via', 'bd']
     f_txn[str_col] = f_txn[str_col].fillna(0)
@@ -187,4 +190,4 @@ def txn_train_test(dataset):
     return f_txn
 
 if __name__ == '__main__':
-    txn_train_test(dataset='test')
+    txn_train_test(dataset='train')

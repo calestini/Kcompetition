@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import modeling as mdl
 import seaborn as sns
+import matplotlib.pyplot as plt
 
 new_id = pd.read_csv('../new_ids_v2.csv')
 
@@ -21,7 +22,7 @@ X_train, X_test, y_train, y_test = mdl.train_test(train, test_size=0, oversampli
 test_merged.drop('is_churn', axis=1, inplace=1)
 
 # Random Forest Grid Search, max depth of 23 seems ideal
-parameters = [{"max_depth": []}]
+parameters = [{"max_depth": [20,21,22,23,24,25,26]}]
 
 #Grid search, optimizing for log loss
 grid_search = GridSearchCV(estimator = RandomForestClassifier(n_estimators= 100, criterion = 'entropy'),
@@ -37,7 +38,7 @@ best_accuracy = grid_search.best_score_
 best_parameters = grid_search.best_params_
 grid_search.grid_scores_
 
-forest = RandomForestClassifier(n_estimators= 100, criterion = 'entropy', max_depth = 19)
+forest = RandomForestClassifier(n_estimators= 100, criterion = 'entropy', max_depth = 20)
 forest.fit(X_train, y_train)
 y_pred = forest.predict(test_merged)
 y_prob = forest.predict_proba(test_merged)
@@ -51,6 +52,17 @@ test_f = test_merged[['new_id','is_churn']].merge(new_id, on='new_id', how='inne
 test_f.drop('new_id', axis=1, inplace=True)
 test_f.to_csv('../test_prediction.csv', index=False)
 
+train.drop('is_churn', inplace = True, axis = 1)
+features = pd.Series(data=forest.feature_importances_, index=train.columns)
+features.sort_values(ascending=True, inplace=True)
+
+plt.figure(num=None, figsize=(6, 12), dpi=80, facecolor='w', edgecolor='k')
+plt.title('Feature Importances')
+plt.barh(range(len(features)), features.values, color='b', align='center')
+plt.yticks(range(len(features)), features.index) ## removed [indices]
+plt.xlabel('Relative Importance')
+plt.show()
+
 
 #XGBOOST
 import xgboost as xgb
@@ -62,7 +74,6 @@ def xgb_score(preds, dtrain):
 params = {
     'eta': 0.002, 
     'max_depth': 20,
-    'min_child_weight': 5,
     'objective': 'binary:logistic',
     'eval_metric': 'logloss',
     'silent': True
@@ -76,5 +87,8 @@ model = xgb.train(params, xgb.DMatrix(X_train, y_train), 1500,  watchlist, feval
 
 pred = model.predict(xgb.DMatrix(test_merged[cols]), ntree_limit=model.best_ntree_limit)
 
-test['is_churn'] = pred.clip(0.0000001, 0.999999)
-test[['msno','is_churn']].to_csv('submission3.csv.gz', index=False, compression='gzip')
+test_merged['is_churn'] = pred.clip(0.0000001, 0.999999)
+
+test_merged['new_id'] = test_merged.index
+test_f = test_merged[['new_id','is_churn']].merge(new_id, on='new_id', how='inner')
+test_f[['msno','is_churn']].to_csv('test_prediction.csv', index=False)

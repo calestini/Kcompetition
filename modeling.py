@@ -38,10 +38,10 @@ def prep_variables(merged_df):
     train = train.join(pd.get_dummies(train['months_listening'])).drop('months_listening', axis = 1)
 
     #DUMMIES FOR CHURN
-    train = train.join(pd.get_dummies(train['cluster9'], prefix = 'cluster_')).drop('cluster9', axis = 1)
+    train = train.join(pd.get_dummies(train['cluster9'], prefix = 'cluster')).drop('cluster9', axis = 1)
     
     #DUMMIES FOR REGISTERED_VIA
-    train = train.join(pd.get_dummies(train['registered_via'], prefix = 'reg_via_')).drop('registered_via', axis = 1)
+    train = train.join(pd.get_dummies(train['registered_via'], prefix = 'reg_via')).drop('registered_via', axis = 1)
     
     #TURN 'NEW_ID' INTO INDEX
     train = train.set_index('new_id')
