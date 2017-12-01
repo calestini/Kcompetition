@@ -67,7 +67,6 @@ def create_new_ids(force = 0):
 
         return True
 
-
 def split_user_logs_old():
     """
     Split user_logs.csv into multiple files. DEPRECATED. DON'T USE.

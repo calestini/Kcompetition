@@ -38,7 +38,7 @@ best_accuracy = grid_search.best_score_
 best_parameters = grid_search.best_params_
 grid_search.grid_scores_
 
-forest = RandomForestClassifier(n_estimators= 100, criterion = 'entropy', max_depth = 20)
+forest = RandomForestClassifier(n_estimators= 100, criterion = 'entropy', max_depth = 23)
 forest.fit(X_train, y_train)
 y_pred = forest.predict(test_merged)
 y_prob = forest.predict_proba(test_merged)
