@@ -49,8 +49,10 @@ print('Random Forest Train \t{:.4f}' .format(log_loss(y_train, y_prob_train)))
 test_merged['is_churn'] = y_prob[:,1] 
 test_merged['new_id'] = test_merged.index
 test_f = test_merged[['new_id','is_churn']].merge(new_id, on='new_id', how='inner')
-test_f.drop('new_id', axis=1, inplace=True)
+test_f=test_f.groupby('msno')['is_churn'].mean().reset_index(name='is_churn')
 test_f.to_csv('../test_prediction.csv', index=False)
+
+test_f.shape
 
 train.drop('is_churn', inplace = True, axis = 1)
 features = pd.Series(data=forest.feature_importances_, index=train.columns)

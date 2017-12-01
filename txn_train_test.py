@@ -36,11 +36,11 @@ def txn_train_test(dataset):
     pmt_plan_sz = txn.groupby(['new_id','payment_plan_days']).size().reset_index(name='pmt_plan_days_size')
     idx = pmt_plan_sz.groupby(['new_id'])['pmt_plan_days_size'].transform(max) == pmt_plan_sz['pmt_plan_days_size']
     pmt_plan_days_mode = pmt_plan_sz[idx].drop('pmt_plan_days_size', axis=1).rename(columns={'payment_plan_days': 'pmt_plan_days_mode'})
-    pmt_plan_days_mode.head()
+    pmt_plan_days_mode = pmt_plan_days_mode.groupby('new_id')['pmt_plan_days_mode'].last().reset_index(name='pmt_plan_days_mode')
     #Last payment plan days
-    pmt_plan_days_lst = txn.groupby('new_id')['payment_plan_days'].last().reset_index(name = 'pmt_plan_days_lst')
-    pmt_plan_mode_lst = pmt_plan_days_mode.merge(pmt_plan_days_lst, on = 'new_id', how = 'inner')
-    
+    #pmt_plan_days_lst = txn.groupby('new_id')['payment_plan_days'].last().reset_index(name = 'pmt_plan_days_lst')
+    #pmt_plan_mode_lst = pmt_plan_days_mode.merge(pmt_plan_days_lst, on = 'new_id', how = 'inner')
+
     print ('Calculating percentage of transactions where member paid less than the list price...')
     #Number, and Percentage of Transactions where Plan List Price Higher than Actual Amount Paid
     txn['list_actual_diff'] = txn['plan_list_price'] - txn['actual_amount_paid']
@@ -80,10 +80,11 @@ def txn_train_test(dataset):
     #Mode payment method
     pmt_method_sz = txn.groupby(['new_id','payment_method_id']).size().reset_index(name='pmt_method_size')
     idx = pmt_method_sz.groupby(['new_id'])['pmt_method_size'].transform(max) == pmt_method_sz['pmt_method_size']
-    pmt_method_mode = pmt_method_sz[idx].drop('pmt_method_size', axis=1).rename(columns={'payment_method_id': 'pmt_method_mode'})
+    pmt_method_mode = pmt_method_sz[idx]
+    pmt_method_mode = pmt_method_mode.groupby('new_id')['payment_method_id'].last().reset_index(name='pmt_method_mode')
     #Last payment method
-    pmt_method_lst = txn.groupby('new_id')['payment_method_id'].last().reset_index(name = 'pmt_method_lst')
-    pmt_method_mode_lst = pmt_method_mode.merge(pmt_method_lst, on = 'new_id', how = 'inner')
+    #pmt_method_lst = txn.groupby('new_id')['payment_method_id'].last().reset_index(name = 'pmt_method_lst')
+    #pmt_method_mode_lst = pmt_method_mode.merge(pmt_method_lst, on = 'new_id', how = 'inner')
     
     print ('Calculating cancellation features...')
     #Cancelled membership:
@@ -148,16 +149,16 @@ def txn_train_test(dataset):
     if dataset == 'train':
         print('Merging transaction features with train dataset...')
         txn_features = [
-        train, tot_plan_pmt, pmt_plan_mode_lst, txn_ar_stop, txn_cancelled, 
+        train, tot_plan_pmt, pmt_plan_days_mode, txn_ar_stop, txn_cancelled, 
         txn_cancelled_last, free_trial, txn_lp_high, 
-        txn_prev_churn, txn_median_gap, txn_pmt_change, pmt_method_mode_lst, memb_expire, memb]
+        txn_prev_churn, txn_median_gap, txn_pmt_change, pmt_method_mode, memb_expire, memb]
         f_txn = functools.reduce(lambda left,right: pd.merge(left,right,on='new_id', how='left'), txn_features)
     else:
         print('Merging transaction features with test dataset...')
         txn_features = [
-        test, tot_plan_pmt, pmt_plan_mode_lst, txn_ar_stop, txn_cancelled, 
+        test, tot_plan_pmt, pmt_plan_days_mode, txn_ar_stop, txn_cancelled, 
         txn_cancelled_last, free_trial, txn_lp_high, 
-        txn_prev_churn, txn_median_gap, txn_pmt_change, pmt_method_mode_lst, memb_expire, memb]
+        txn_prev_churn, txn_median_gap, txn_pmt_change, pmt_method_mode, memb_expire, memb]
         f_txn = functools.reduce(lambda left,right: pd.merge(left,right,on='new_id', how='left'), txn_features)
     
     print ('Replacing null values...')
@@ -167,7 +168,7 @@ def txn_train_test(dataset):
     f_txn.loc[mask, 'bd'] = 100
     
     str_col = ['per_free_trial', 'txn_cnt'
-               , 'per_lp_high', 'prev_churn_per', 'txn_median_gap', 'pmt_change_cnt', 'pmt_plan_days_lst', 'pmt_method_lst'
+               , 'per_lp_high', 'prev_churn_per', 'txn_median_gap', 'pmt_change_cnt'
                , 'pmt_plan_days_mode', 'pmt_method_mode', 'lst_memb_expire_days', 'memb_tenure_days' , 'avg_daily_paid'
                , 'list_actual_diff', 'payment_plan_days', 'end_lst_txn_days', 'last_cancel'
                , 'registered_via', 'bd']
@@ -205,4 +206,4 @@ def txn_train_test(dataset):
     return f_txn
 
 if __name__ == '__main__':
-    txn_train_test(dataset='test')
+    txn_train_test(dataset='train')
