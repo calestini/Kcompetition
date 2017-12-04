@@ -41,13 +41,13 @@ def prep_variables(merged_df):
     train = train.join(pd.get_dummies(train['cluster9'], prefix = 'cluster')).drop('cluster9', axis = 1)
     
     #DUMMIES FOR REGISTERED_VIA
-    train = train.join(pd.get_dummies(train['registered_via'], prefix = 'reg_via')).drop('registered_via', axis = 1)
+    #train = train.join(pd.get_dummies(train['registered_via'], prefix = 'reg_via')).drop('registered_via', axis = 1)
     
     #DUMMIES FOR PAYMENT_PLAN_DAYS_MODE
-    train = train.join(pd.get_dummies(train['pmt_plan_days_mode'], prefix = 'pmt_plan')).drop('pmt_plan_days_mode', axis = 1)
+    #train = train.join(pd.get_dummies(train['pmt_plan_days_mode'], prefix = 'pmt_plan')).drop('pmt_plan_days_mode', axis = 1)
 
     #DUMMIES FOR PAYMENT_METHOD_ID_MODE
-    train = train.join(pd.get_dummies(train['pmt_method_mode'], prefix = 'pmt_method')).drop('pmt_method_mode', axis = 1)
+    #train = train.join(pd.get_dummies(train['pmt_method_mode'], prefix = 'pmt_method')).drop('pmt_method_mode', axis = 1)
 
     #TURN 'NEW_ID' INTO INDEX
     train = train.set_index('new_id')

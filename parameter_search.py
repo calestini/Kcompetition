@@ -13,13 +13,23 @@ from sklearn.metrics import confusion_matrix, log_loss
 
 test_merged = mdl.read_datasets(['final_txn_test_v2', 'final_user_log_test'])
 test_merged = mdl.prep_variables(test_merged)
+test_merged['last_ar'] = test_merged['last_ar'].fillna(0)
 
 train = mdl.read_datasets()
 train = mdl.prep_variables(train)
+train['last_ar'] = train['last_ar'].fillna(0)
+
+#for c in train.columns:
+ #   if train[c].isnull().sum()>0:
+  #      print(train[c])
 
 X_train, X_test, y_train, y_test = mdl.train_test(train, test_size=0, oversampling=0)
 
 test_merged.drop('is_churn', axis=1, inplace=1)
+
+#for c in test_merged.columns:
+ #   if c not in train.columns:
+  #      print(c)
 
 # Random Forest Grid Search, max depth of 23 seems ideal
 parameters = [{"max_depth": [20,21,22,23,24,25,26]}]
@@ -38,7 +48,7 @@ best_accuracy = grid_search.best_score_
 best_parameters = grid_search.best_params_
 grid_search.grid_scores_
 
-forest = RandomForestClassifier(n_estimators= 100, criterion = 'entropy', max_depth = 20)
+forest = RandomForestClassifier(n_estimators= 100, criterion = 'entropy', max_depth = 23)
 forest.fit(X_train, y_train)
 y_pred = forest.predict(test_merged)
 y_prob = forest.predict_proba(test_merged)

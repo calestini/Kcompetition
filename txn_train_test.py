@@ -37,6 +37,15 @@ def txn_train_test(dataset):
     idx = pmt_plan_sz.groupby(['new_id'])['pmt_plan_days_size'].transform(max) == pmt_plan_sz['pmt_plan_days_size']
     pmt_plan_days_mode = pmt_plan_sz[idx].drop('pmt_plan_days_size', axis=1).rename(columns={'payment_plan_days': 'pmt_plan_days_mode'})
     pmt_plan_days_mode = pmt_plan_days_mode.groupby('new_id')['pmt_plan_days_mode'].last().reset_index(name='pmt_plan_days_mode')
+    if dataset == 'train':
+        pmt_plan_days_mode.loc[pmt_plan_days_mode.pmt_plan_days_mode.isin([29,201,398,401,474,483]), 'pmt_plan_days_mode'] = 0
+        pmt_plan_days_mode = pmt_plan_days_mode.join(pd.get_dummies(pmt_plan_days_mode['pmt_plan_days_mode'], prefix = 'pmt_plan')).drop('pmt_plan_days_mode', axis = 1)
+        pmt_plan_days_mode = pmt_plan_days_mode.drop(['pmt_plan_0.0'], axis = 1)
+    else:
+        pmt_plan_days_mode = pmt_plan_days_mode.join(pd.get_dummies(pmt_plan_days_mode['pmt_plan_days_mode'], prefix = 'pmt_plan')).drop('pmt_plan_days_mode', axis = 1)
+        pmt_plan_days_mode = pmt_plan_days_mode.drop(['pmt_plan_3.0'], axis = 1)
+    pmt_pd_mode_cols = pmt_plan_days_mode.columns
+    
     #Last payment plan days
     #pmt_plan_days_lst = txn.groupby('new_id')['payment_plan_days'].last().reset_index(name = 'pmt_plan_days_lst')
     #pmt_plan_mode_lst = pmt_plan_days_mode.merge(pmt_plan_days_lst, on = 'new_id', how = 'inner')
@@ -69,7 +78,6 @@ def txn_train_test(dataset):
     txn_ar_change = txn.groupby(['new_id'])['is_auto_renew'].mean().reset_index(name='mean_ar')
     txn_ar_stop = txn_ar_change.merge(txn_ar_last, on='new_id', how='inner')
     txn_ar_stop['stopped_ar']=(txn_ar_stop['mean_ar'] < 1) & (txn_ar_stop['mean_ar'] > 0) & (txn_ar_stop['last_ar'] == 0)
-    txn_ar_stop.drop('last_ar', axis = 1, inplace = True)
 
     print ('Calculating payment method features...')
     #Changed payment method:determine if transaction date-membership expiry date from previous row is >30days 
@@ -82,6 +90,14 @@ def txn_train_test(dataset):
     idx = pmt_method_sz.groupby(['new_id'])['pmt_method_size'].transform(max) == pmt_method_sz['pmt_method_size']
     pmt_method_mode = pmt_method_sz[idx]
     pmt_method_mode = pmt_method_mode.groupby('new_id')['payment_method_id'].last().reset_index(name='pmt_method_mode')
+    if dataset == 'train':
+        pmt_method_mode.loc[pmt_method_mode.pmt_method_mode == 5, 'pmt_method_mode'] = 0
+        pmt_method_mode = pmt_method_mode.join(pd.get_dummies(pmt_method_mode['pmt_method_mode'], prefix = 'pmt_method')).drop('pmt_method_mode', axis = 1)
+        pmt_method_mode = pmt_method_mode.drop('pmt_method_0', axis = 1)
+    else:
+        pmt_method_mode = pmt_method_mode.join(pd.get_dummies(pmt_method_mode['pmt_method_mode'], prefix = 'pmt_method')).drop('pmt_method_mode', axis = 1)
+    pmt_m_mode_cols = pmt_method_mode.columns
+
     #Last payment method
     #pmt_method_lst = txn.groupby('new_id')['payment_method_id'].last().reset_index(name = 'pmt_method_lst')
     #pmt_method_mode_lst = pmt_method_mode.merge(pmt_method_lst, on = 'new_id', how = 'inner')
@@ -143,7 +159,11 @@ def txn_train_test(dataset):
     memb_expire.drop(['max_memb_expire', 'registration_init_time', 'lst_memb_expire'
                       , 'fst_txn_dt', 'lst_txn_dt', 'lst_pmt_plan_days'], inplace = True, axis = 1)
     
-    memb = memb[['new_id','registered_via', 'bd']]
+    memb = memb[['new_id','registered_via', 'bd', 'gender', 'city']]
+    memb = memb.join(pd.get_dummies(memb['registered_via'], prefix = 'reg_via')).drop('registered_via', axis = 1)
+    memb = memb.join(pd.get_dummies(memb['gender'])).drop('gender', axis = 1)
+    memb = memb.join(pd.get_dummies(memb['city'], prefix = 'city')).drop('city', axis = 1)
+    memb_cols = memb.columns
 
     print ('Merging features...')
     if dataset == 'train':
@@ -162,17 +182,19 @@ def txn_train_test(dataset):
         f_txn = functools.reduce(lambda left,right: pd.merge(left,right,on='new_id', how='left'), txn_features)
     
     print ('Replacing null values...')
-    mask = f_txn.bd < 0
-    f_txn.loc[mask, 'bd'] = 0
-    mask = f_txn.bd > 100 
-    f_txn.loc[mask, 'bd'] = 100
+    
+    f_txn.loc[f_txn.bd < 0, 'bd'] = 0
+    f_txn.loc[f_txn.bd > 100, 'bd'] = 0
     
     str_col = ['per_free_trial', 'txn_cnt'
                , 'per_lp_high', 'prev_churn_per', 'txn_median_gap', 'pmt_change_cnt'
-               , 'pmt_plan_days_mode', 'pmt_method_mode', 'lst_memb_expire_days', 'memb_tenure_days' , 'avg_daily_paid'
-               , 'list_actual_diff', 'payment_plan_days', 'end_lst_txn_days', 'last_cancel'
-               , 'registered_via', 'bd']
+               , 'lst_memb_expire_days', 'memb_tenure_days' , 'avg_daily_paid', 'last_ar'
+               , 'list_actual_diff', 'payment_plan_days', 'end_lst_txn_days', 'last_cancel', 'bd']
     f_txn[str_col] = f_txn[str_col].fillna(0)
+    
+    f_txn[pmt_pd_mode_cols] = f_txn[pmt_pd_mode_cols].fillna(0)
+    f_txn[pmt_m_mode_cols] = f_txn[pmt_m_mode_cols].fillna(0)
+    f_txn[memb_cols] = f_txn[memb_cols].fillna(0)
     
     str_col = ['stopped_ar', 'lst_free_trial', 'not_equal', 'lst_memb_expire_post']
     f_txn[str_col] = f_txn[str_col].fillna(False)
@@ -206,4 +228,4 @@ def txn_train_test(dataset):
     return f_txn
 
 if __name__ == '__main__':
-    txn_train_test(dataset='train')
+    txn_train_test(dataset='test')
