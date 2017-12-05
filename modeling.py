@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 import numpy as np
 import pandas as pd
 #from sklearn.cross_validation import train_test_split
@@ -39,10 +37,10 @@ def prep_variables(merged_df):
 
     #DUMMIES FOR CHURN
     train = train.join(pd.get_dummies(train['cluster9'], prefix = 'cluster')).drop('cluster9', axis = 1)
-    
+
     #DUMMIES FOR REGISTERED_VIA
     #train = train.join(pd.get_dummies(train['registered_via'], prefix = 'reg_via')).drop('registered_via', axis = 1)
-    
+
     #DUMMIES FOR PAYMENT_PLAN_DAYS_MODE
     #train = train.join(pd.get_dummies(train['pmt_plan_days_mode'], prefix = 'pmt_plan')).drop('pmt_plan_days_mode', axis = 1)
 
