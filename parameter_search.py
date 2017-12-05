@@ -11,6 +11,21 @@ from sklearn.cross_validation import train_test_split
 from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import confusion_matrix, log_loss
 
+train_mar = dm.train_v2()
+train_feb = dm.train()
+
+#What's overlapping?
+train_feb_mar = train_feb.merge(train_mar, on = 'new_id', how = 'inner')
+print(train_feb_mar['new_id'].nunique())
+
+#What's in v2 that's not in og?
+train_mar['in_feb'] = train_mar['new_id'].isin(train_feb['new_id'])
+
+#What's in og but not v2?
+train_feb['in_mar'] = train_feb['new_id']
+
+#Churn in og and v2?
+
 test_merged = mdl.read_datasets(['final_txn_test_v2', 'final_user_log_test'])
 test_merged = mdl.prep_variables(test_merged)
 test_merged['last_ar'] = test_merged['last_ar'].fillna(0)
@@ -32,23 +47,7 @@ test_merged.drop('is_churn', axis=1, inplace=1)
   #      print(c)
 
 # Random Forest Grid Search, max depth of 23 seems ideal
-parameters = [{"max_depth": [20,21,22,23,24,25,26]}]
-
-#Grid search, optimizing for log loss
-grid_search = GridSearchCV(estimator = RandomForestClassifier(n_estimators= 100, criterion = 'entropy'),
-                           param_grid = parameters,
-                           scoring = 'neg_log_loss',
-                           cv = 5,
-                           n_jobs = -1,
-                           verbose = 1)
-grid_search = grid_search.fit(X_train, y_train)
-
-#Grid search results
-best_accuracy = grid_search.best_score_
-best_parameters = grid_search.best_params_
-grid_search.grid_scores_
-
-forest = RandomForestClassifier(n_estimators= 100, criterion = 'entropy', max_depth = 23)
+forest = RandomForestClassifier(n_estimators= 100, criterion = 'entropy', max_depth = 26)
 forest.fit(X_train, y_train)
 y_pred = forest.predict(test_merged)
 y_prob = forest.predict_proba(test_merged)
@@ -68,12 +67,35 @@ train.drop('is_churn', inplace = True, axis = 1)
 features = pd.Series(data=forest.feature_importances_, index=train.columns)
 features.sort_values(ascending=True, inplace=True)
 
-plt.figure(num=None, figsize=(6, 12), dpi=80, facecolor='w', edgecolor='k')
+plt.figure(num=None, figsize=(6, 30), dpi=80, facecolor='w', edgecolor='k')
 plt.title('Feature Importances')
 plt.barh(range(len(features)), features.values, color='b', align='center')
 plt.yticks(range(len(features)), features.index) ## removed [indices]
 plt.xlabel('Relative Importance')
 plt.show()
+
+sns.heatmap(train.corr())
+
+########################################
+
+# Random Forest Grid Search, max depth of 23 seems ideal
+parameters = [{"max_depth": [20,21,22,23,24,25,26]}]
+
+#Grid search, optimizing for log loss
+grid_search = GridSearchCV(estimator = RandomForestClassifier(n_estimators= 100, criterion = 'entropy'),
+                           param_grid = parameters,
+                           scoring = 'neg_log_loss',
+                           cv = 5,
+                           n_jobs = -1,
+                           verbose = 1)
+grid_search = grid_search.fit(X_train, y_train)
+
+#Grid search results
+best_accuracy = grid_search.best_score_
+best_parameters = grid_search.best_params_
+grid_search.grid_scores_
+
+###########################################
 
 
 #XGBOOST
