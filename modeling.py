@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 import numpy as np
 import pandas as pd
 #from sklearn.cross_validation import train_test_split
@@ -38,13 +36,16 @@ def prep_variables(merged_df):
     train = train.join(pd.get_dummies(train['months_listening'])).drop('months_listening', axis = 1)
 
     #DUMMIES FOR CHURN
-    train = train.join(pd.get_dummies(train['cluster9'], prefix = 'cluster_')).drop('cluster9', axis = 1)
+    train = train.join(pd.get_dummies(train['cluster9'], prefix = 'cluster')).drop('cluster9', axis = 1)
 
     #DUMMIES FOR REGISTERED_VIA
-    train = train.join(pd.get_dummies(train['registered_via'], prefix = 'reg_via_')).drop('registered_via', axis = 1)
+    #train = train.join(pd.get_dummies(train['registered_via'], prefix = 'reg_via')).drop('registered_via', axis = 1)
 
-    #Fix LAST_CANCEL string issue
-    train['last_cancel'] = train['last_cancel'].apply(pd.to_numeric, errors='coerce').fillna(0)
+    #DUMMIES FOR PAYMENT_PLAN_DAYS_MODE
+    #train = train.join(pd.get_dummies(train['pmt_plan_days_mode'], prefix = 'pmt_plan')).drop('pmt_plan_days_mode', axis = 1)
+
+    #DUMMIES FOR PAYMENT_METHOD_ID_MODE
+    #train = train.join(pd.get_dummies(train['pmt_method_mode'], prefix = 'pmt_method')).drop('pmt_method_mode', axis = 1)
 
     #TURN 'NEW_ID' INTO INDEX
     train = train.set_index('new_id')
@@ -130,47 +131,17 @@ def model_knn(X_train, X_test, y_train, y_test, n_neighbors=5, weights='uniform'
     print ('n_neighbors: {}, weights: {}' .format(n_neighbors, weights))
     printm(y_train, y_prob_train, y_test, y_prob)
 
-def predict_test(model_selected, dev_size=0.10, oversampling=0):
+if __name__ == '__main__':
     datax = read_datasets()
     datax1 = prep_variables(datax)
-
-    X_train, X_test, y_train, y_test = train_test(datax1, test_size = dev_size, oversampling=oversampling)
-    models = model_selected.fit(X_train, y_train)
-    y_prob = models.predict_proba(X_test)
-    y_prob_train = models.predict_proba(X_train)
-    printm(y_train, y_prob_train, y_test, y_prob)
-
-    test_df = read_datasets(list_data = ['final_txn_test_v2', 'final_user_log_test'])
-    test_final = prep_variables(test_df)
-    x_final, _, _, _ = train_test(test_final, test_size = 0.00, seed = 27, oversampling = 0)
-    y_final = models.predict_proba(x_final)
-    test_final['is_churn'] = y_final[:,1]
-
-    new_id = pd.read_csv('../new_ids_v2.csv')
-    #load new_id file
-    test_final['new_id'] = test_final.index
-    test_f = test_final[['new_id','is_churn']].merge(new_id, on='new_id', how='inner')
-    test_f.drop('new_id', axis=1, inplace=True)
-    test_f.to_csv('../test_prediction.csv', index=False)
-
-
-if __name__ == '__main__':
-    #datax = read_datasets()
-    #datax1 = prep_variables(datax)
-
-    #datax1['last_cancel'] = datax1['last_cancel'].apply(pd.to_numeric, errors='coerce').fillna(0)
-
-    predict_test(RandomForestClassifier(n_estimators= 25, criterion = 'entropy', max_depth=9))
 
     #X_train, X_test, y_train, y_test = train_test(datax1, oversampling=1)
     #model_forest(X_train, X_test, y_train, y_test, trees=25, criterion = 'gini', max_depth=10)
     #model_forest(X_train, X_test, y_train, y_test, trees=15, criterion = 'gini', max_depth=10)
     #model_forest(X_train, X_test, y_train, y_test, trees=15, criterion = 'entropy', max_depth=10)
     #model_forest(X_train, X_test, y_train, y_test, trees=25, criterion = 'gini', max_depth=15)
-
-    #X_train, X_test, y_train, y_test = train_test(datax1, oversampling=0)
-    #model_forest(X_train, X_test, y_train, y_test, trees=25, criterion = 'gini', max_depth=10)
-
+    X_train, X_test, y_train, y_test = train_test(datax1, oversampling=-1)
+    model_forest(X_train, X_test, y_train, y_test, trees=25, criterion = 'gini', max_depth=15)
     #model_svm(X_train, X_test, y_train, y_test)
     #model_log(X_train, X_test, y_train, y_test)
     #model_gaussian(X_train, X_test, y_train, y_test)
