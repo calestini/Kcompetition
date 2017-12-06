@@ -11,54 +11,43 @@ from sklearn.cross_validation import train_test_split
 from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import confusion_matrix, log_loss
 
-train_mar = dm.train_v2()
-train_feb = dm.train()
+str_col = ['per_free_trial', 'txn_cnt'
+           , 'per_lp_high', 'prev_churn_per', 'txn_median_gap', 'pmt_change_cnt'
+           , 'lst_memb_expire_days', 'memb_tenure_days' , 'avg_daily_paid', 'last_ar'
+           , 'list_actual_diff', 'payment_plan_days', 'end_lst_txn_days', 'last_cancel'
+           , 'lst_pmt_plan_days', 'stopped_ar', 'lst_free_trial', 'not_equal', 'lst_memb_expire_post'
+           , 'mean_ar', 'mean_cancel', 'missing_txns']
 
-#What's overlapping?
-train_feb_mar = train_feb.merge(train_mar, on = 'new_id', how = 'inner')
-print(train_feb_mar['new_id'].nunique())
-
-#What's in v2 that's not in og?
-train_mar['in_feb'] = train_mar['new_id'].isin(train_feb['new_id'])
-
-#What's in og but not v2?
-train_feb['in_mar'] = train_feb['new_id']
-
-#Churn in og and v2?
-
-test_merged = mdl.read_datasets(['final_txn_test_v2', 'final_user_log_test'])
-test_merged = mdl.prep_variables(test_merged)
-test_merged['last_ar'] = test_merged['last_ar'].fillna(0)
+test = mdl.read_datasets(['final_txn_test_v2', 'final_user_log_test'])
+test = mdl.prep_variables(test)
 
 train = mdl.read_datasets()
 train = mdl.prep_variables(train)
-train['last_ar'] = train['last_ar'].fillna(0)
+train_txn = train[train['missing_txns'] == False]
+train_rest = train[train['missing_txns'] == True]
+train_rest.drop(str_col, axis = 1, inplace = True)
 
-#for c in train.columns:
- #   if train[c].isnull().sum()>0:
-  #      print(train[c])
+X_train, X_test, y_train, y_test = mdl.train_test(train_txn, test_size=0, oversampling=0)
 
-X_train, X_test, y_train, y_test = mdl.train_test(train, test_size=0, oversampling=0)
-
-test_merged.drop('is_churn', axis=1, inplace=1)
-
+test.drop('is_churn', axis=1, inplace=1)
 #for c in test_merged.columns:
  #   if c not in train.columns:
   #      print(c)
 
-# Random Forest Grid Search, max depth of 23 seems ideal
-forest = RandomForestClassifier(n_estimators= 100, criterion = 'entropy', max_depth = 26)
+#Random forest model for users with transaction data
+forest = RandomForestClassifier(n_estimators= 100, criterion = 'entropy', max_depth = 23)
 forest.fit(X_train, y_train)
-y_pred = forest.predict(test_merged)
-y_prob = forest.predict_proba(test_merged)
+y_pred = forest.predict(test)
+y_prob = forest.predict_proba(test)
 y_prob_train = forest.predict_proba(X_train)
 
 print('Random Forest Train \t{:.4f}' .format(log_loss(y_train, y_prob_train)))
 
-test_merged['is_churn'] = y_prob[:,1] 
-test_merged['new_id'] = test_merged.index
-test_f = test_merged[['new_id','is_churn']].merge(new_id, on='new_id', how='inner')
-test_f=test_f.groupby('msno')['is_churn'].mean().reset_index(name='is_churn')
+#Assign predictions to test dataset
+test['is_churn'] = y_prob[:,1] 
+test['new_id'] = test.index
+test_f = test[['new_id','is_churn']].merge(new_id, on='new_id', how='inner')
+test_f.drop('new_id', axis = 1, inplace = True)
 test_f.to_csv('../test_prediction.csv', index=False)
 
 test_f.shape

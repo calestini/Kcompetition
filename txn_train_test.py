@@ -193,7 +193,7 @@ def txn_train_test(dataset):
         f_txn = functools.reduce(lambda left,right: pd.merge(left,right,on='new_id', how='left'), txn_features)
     '''
     if dataset == 'train':
-        print('Merging transaction features with March churn train dataset...')
+        print('Merging transaction features with train dataset...')
         txn_features = [
         train, tot_plan_pmt, txn_ar_stop, txn_cancelled, 
         txn_cancelled_last, free_trial, txn_lp_high, 
@@ -206,6 +206,9 @@ def txn_train_test(dataset):
         txn_cancelled_last, free_trial, txn_lp_high, 
         txn_prev_churn, txn_median_gap, txn_pmt_change, memb_expire, memb]
         f_txn = functools.reduce(lambda left,right: pd.merge(left,right,on='new_id', how='left'), txn_features)
+        
+    f_txn['missing_txns'] = f_txn['txn_cnt'].isnull()
+    f_txn['missing_memb'] = f_txn['bd'].isnull()
     
     print ('Replacing null values...')
     
@@ -248,8 +251,8 @@ def txn_train_test(dataset):
         f_txn.to_csv('../final_txn_feb.csv', index=False)
     '''
     if dataset == 'train':   
-        print ('Exporting transaction features for March churn train dataset into csv...') 
-        f_txn.to_csv('../final_txn_mar.csv', index=False)
+        print ('Exporting transaction features for train dataset into csv...') 
+        f_txn.to_csv('../final_txn_v2.csv', index=False)
     else:
         print ('Exporting transaction features for test dataset into csv...') 
         f_txn.to_csv('../final_txn_test_v2.csv', index=False)
@@ -257,4 +260,4 @@ def txn_train_test(dataset):
     return f_txn
 
 if __name__ == '__main__':
-    txn_train_test(dataset='train')
+    txn_train_test(dataset='test')
