@@ -16,8 +16,8 @@ from sklearn.svm import SVC
 #import xgboost as xgb
 
 ##make sure to have installed skilearn version 0.19
-from imblearn.over_sampling import SMOTE
-from imblearn.under_sampling import CondensedNearestNeighbour, RandomUnderSampler
+#from imblearn.over_sampling import SMOTE
+#from imblearn.under_sampling import CondensedNearestNeighbour, RandomUnderSampler
 
 
 def read_datasets(list_data = ['final_txn_v2', 'final_user_log_v2']):
