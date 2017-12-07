@@ -56,7 +56,7 @@ def save_files_add_ids(files = ['merged_transactions.csv', 'members.csv', 'train
     new_ids = pd.read_csv('../new_ids_add.csv')
     list_files = files
 
-    for doc in list_files:
+    for doc in list_files:            
         if os.path.isfile('../' + prefix + doc) and force == 0:
             print ('File %s already existed. Nothing created' %(prefix+doc))
             pass
@@ -71,20 +71,25 @@ def save_files_add_ids(files = ['merged_transactions.csv', 'members.csv', 'train
         onlyfiles = [f for f in listdir('../user_log_files/') if os.path.isfile(os.path.join('../user_log_files/', f))]
 
         for doc in onlyfiles:
-            if doc != '.DS_Store' and doc[0:len(prefix)] != prefix:
+            if doc != '.DS_Store' and doc != 'user_logs.csv' and doc[0:len(prefix)] != prefix and doc[0:len(prefix)] != 'new_':
                 print ('updating ids for file %s ......'  %(doc))
-                if (doc == 'user_logs.csv')|(doc == 'user_logs_v2.csv'):
+                if (doc == 'user_logs0.csv')|(doc == 'user_logs_v2.csv'):
                     filex = pd.read_csv('../user_log_files/'+doc)
+                else:
+                    filex = pd.read_csv('../user_log_files/'+doc, header=None,
+                        names = [
+                            'msno', 'date', 'num_25', 'num_50', 'num_75', 'num_985', 'num_100', 'num_unq', 'total_secs'
+                            ])
                 filex = filex.merge(new_ids, left_on='msno', right_on ='msno', how='inner', copy = False).drop('msno', axis = 1)
                 filex.to_csv('../user_log_files/'+prefix+doc, index = False)
-                
+
     return True
 
 
 if __name__ == '__main__':
     
     #create_add_new_ids()
-    save_files_add_ids()
+    save_files_add_ids(force_userlog=1)
 
 
 
